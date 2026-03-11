@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: #1B4F72;
+  --primary-light: #2E86C1;
+  --accent: #E67E22;
+  --accent-light: #F39C12;
+  --success: #1E8449;
+  --danger: #C0392B;
+  --warning: #B7950B;
+  --bg: #F8F9FA;
+  --surface: #FFFFFF;
+  --border: #DEE2E6;
+  --text: #1A1A2E;
+  --text-muted: #6C757D;
+  --sidebar: #0F2D4A;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  margin: 0;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Syne', sans-serif;
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-primary text-white px-6 py-2.5 rounded-lg font-medium hover:bg-primary-light transition-colors duration-200;
+  }
+  .btn-accent {
+    @apply bg-accent text-white px-6 py-2.5 rounded-lg font-medium hover:bg-accent-light transition-colors duration-200;
+  }
+  .btn-outline {
+    @apply border-2 border-primary text-primary px-6 py-2.5 rounded-lg font-medium hover:bg-primary hover:text-white transition-colors duration-200;
+  }
+  .btn-danger {
+    @apply bg-danger text-white px-6 py-2.5 rounded-lg font-medium hover:opacity-90 transition-colors duration-200;
+  }
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-border p-6;
+  }
+  .input-field {
+    @apply w-full px-4 py-2.5 rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-primary-light focus:border-transparent transition-all duration-200;
+  }
+}
