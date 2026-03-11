@@ -19,7 +19,7 @@ export default function StarRating({ rating = 0, onRate, size = 'md', count = 5 
             className={`${onRate ? 'cursor-pointer hover:scale-110' : 'cursor-default'} transition-transform`}
           >
             <Star
-              className={`${iconSize} ${filled ? 'fill-accent text-accent' : 'fill-none text-gray-300'}`}
+              className={`${iconSize} ${filled ? 'fill-orange-500 text-orange-500' : 'fill-none text-gray-300'}`}
             />
           </button>
         );

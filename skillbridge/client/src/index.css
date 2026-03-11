@@ -7,10 +7,14 @@
   --primary-light: #2E86C1;
   --accent: #E67E22;
   --accent-light: #F39C12;
+  --red-brand: #B91C1C;
+  --red-light: #DC2626;
+  --orange-brand: #EA580C;
+  --orange-light: #F97316;
   --success: #1E8449;
   --danger: #C0392B;
   --warning: #B7950B;
-  --bg: #F8F9FA;
+  --bg: #FFF9F5;
   --surface: #FFFFFF;
   --border: #DEE2E6;
   --text: #1A1A2E;
@@ -36,8 +40,14 @@ h1, h2, h3, h4, h5, h6 {
   .btn-accent {
     @apply bg-accent text-white px-6 py-2.5 rounded-lg font-medium hover:bg-accent-light transition-colors duration-200;
   }
+  .btn-red {
+    @apply bg-red-brand text-white px-6 py-2.5 rounded-lg font-medium hover:bg-red-light transition-colors duration-200;
+  }
   .btn-outline {
     @apply border-2 border-primary text-primary px-6 py-2.5 rounded-lg font-medium hover:bg-primary hover:text-white transition-colors duration-200;
+  }
+  .btn-outline-red {
+    @apply border-2 border-red-brand text-red-brand px-6 py-2.5 rounded-lg font-medium hover:bg-red-brand hover:text-white transition-colors duration-200;
   }
   .btn-danger {
     @apply bg-danger text-white px-6 py-2.5 rounded-lg font-medium hover:opacity-90 transition-colors duration-200;

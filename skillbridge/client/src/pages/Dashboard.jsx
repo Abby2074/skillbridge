@@ -172,7 +172,7 @@ export default function Dashboard() {
                   key={tab.path}
                   to={`/dashboard${tab.path === '/' ? '' : tab.path}`}
                   className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                    path === tab.path ? 'bg-primary text-white' : 'text-text-muted hover:bg-gray-50 hover:text-text-main'
+                    path === tab.path ? 'bg-gradient-to-r from-red-brand to-orange-brand text-white' : 'text-text-muted hover:bg-orange-soft hover:text-text-main'
                   }`}
                 >
                   <tab.icon className="h-4 w-4" /> {tab.label}
@@ -202,7 +202,7 @@ export default function Dashboard() {
               <div className="card">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-display font-semibold text-lg">Upcoming Sessions</h2>
-                  <Link to="/dashboard/bookings" className="text-primary text-sm font-medium hover:underline flex items-center gap-1">
+                  <Link to="/dashboard/bookings" className="text-red-brand text-sm font-medium hover:underline flex items-center gap-1">
                     View all <ArrowRight className="h-3.5 w-3.5" />
                   </Link>
                 </div>
@@ -211,7 +211,7 @@ export default function Dashboard() {
                 ) : (
                   <div className="space-y-3">
                     {dashboard.upcoming_bookings.slice(0, 5).map(b => (
-                      <div key={b.booking_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div key={b.booking_id} className="flex items-center justify-between p-3 bg-orange-soft rounded-lg">
                         <div>
                           <p className="font-medium text-sm">{b.title}</p>
                           <p className="text-text-muted text-xs">with {b.other_party_name} | {format(new Date(b.scheduled_date), 'MMM dd, yyyy')}</p>

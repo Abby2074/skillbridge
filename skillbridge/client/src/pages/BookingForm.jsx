@@ -108,7 +108,7 @@ export default function BookingForm() {
           {/* Session Info */}
           <div className="card">
             <div className="flex items-start gap-4">
-              <div className="w-14 h-14 bg-primary rounded-xl flex items-center justify-center text-white font-display font-bold text-2xl">
+              <div className="w-14 h-14 bg-gradient-to-br from-red-brand to-orange-brand rounded-xl flex items-center justify-center text-white font-display font-bold text-2xl">
                 {listing.tutor_name?.charAt(0)}
               </div>
               <div>
@@ -132,7 +132,7 @@ export default function BookingForm() {
           {/* Time Slot Picker */}
           <div className="card">
             <h3 className="font-display font-semibold text-lg mb-4 flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-primary" /> Select a Time Slot
+              <Calendar className="h-5 w-5 text-orange-brand" /> Select a Time Slot
             </h3>
             <div className="space-y-3">
               {DAYS.map(day => slotsByDay[day].length > 0 && (
@@ -148,8 +148,8 @@ export default function BookingForm() {
                         }}
                         className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
                           selectedSlot?.availability_id === slot.availability_id
-                            ? 'bg-primary text-white'
-                            : 'bg-gray-50 text-text-main hover:bg-primary/10'
+                            ? 'bg-gradient-to-r from-red-brand to-orange-brand text-white'
+                            : 'bg-orange-soft text-text-main hover:bg-orange-brand/10'
                         }`}
                       >
                         <Clock className="h-3.5 w-3.5" />
@@ -182,7 +182,7 @@ export default function BookingForm() {
           {/* Delivery Format */}
           <div className="card">
             <h3 className="font-display font-semibold mb-3 flex items-center gap-2">
-              <Monitor className="h-5 w-5 text-primary" /> Delivery Format
+              <Monitor className="h-5 w-5 text-orange-brand" /> Delivery Format
             </h3>
             <div className="flex gap-3">
               {['online', 'in_person'].map(f => (
@@ -190,7 +190,7 @@ export default function BookingForm() {
                   key={f}
                   onClick={() => setDeliveryFormat(f)}
                   className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium border-2 transition-all ${
-                    deliveryFormat === f ? 'border-primary bg-primary/5 text-primary' : 'border-border text-text-muted hover:border-primary/30'
+                    deliveryFormat === f ? 'border-orange-brand bg-orange-soft text-orange-brand' : 'border-border text-text-muted hover:border-orange-brand/30'
                   }`}
                 >
                   {f === 'online' ? 'Online (Video Call)' : 'In-Person'}
@@ -231,7 +231,7 @@ export default function BookingForm() {
 
             <div className="border-t border-border pt-3 flex justify-between">
               <span className="font-display font-semibold">Total</span>
-              <span className="font-display font-bold text-xl text-accent">GHS {totalCost.toFixed(2)}</span>
+              <span className="font-display font-bold text-xl text-orange-brand">GHS {totalCost.toFixed(2)}</span>
             </div>
 
             {/* Wallet Balance */}
@@ -255,7 +255,7 @@ export default function BookingForm() {
             <button
               onClick={handleBook}
               disabled={!hasEnoughBalance || !selectedSlot || !selectedDate || bookMutation.isPending}
-              className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-gradient-to-r from-red-brand to-orange-brand text-white px-6 py-2.5 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {bookMutation.isPending ? 'Booking...' : 'Confirm Booking'}
             </button>

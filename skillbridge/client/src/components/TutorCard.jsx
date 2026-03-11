@@ -5,13 +5,13 @@ import { MapPin, Clock, Users } from 'lucide-react';
 
 export default function TutorCard({ tutor }) {
   return (
-    <div className="card hover:shadow-md transition-shadow duration-200">
+    <div className="card hover:shadow-md hover:border-orange-brand/20 transition-all duration-200">
       <div className="flex items-start gap-4">
-        <div className="w-14 h-14 bg-primary rounded-full flex items-center justify-center text-white font-display font-bold text-xl flex-shrink-0">
+        <div className="w-14 h-14 bg-gradient-to-br from-red-brand to-orange-brand rounded-full flex items-center justify-center text-white font-display font-bold text-xl flex-shrink-0">
           {tutor.full_name?.charAt(0)}
         </div>
         <div className="flex-1 min-w-0">
-          <Link to={`/tutor/${tutor.user_id}`} className="font-display font-semibold text-lg text-text-main hover:text-primary transition-colors">
+          <Link to={`/tutor/${tutor.user_id}`} className="font-display font-semibold text-lg text-text-main hover:text-red-brand transition-colors">
             {tutor.full_name}
           </Link>
           <div className="flex items-center gap-1 text-text-muted text-sm mt-0.5">
@@ -41,10 +41,10 @@ export default function TutorCard({ tutor }) {
 
       <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
         <div>
-          <span className="font-display font-bold text-xl text-accent">GHS {Number(tutor.hourly_rate).toFixed(0)}</span>
+          <span className="font-display font-bold text-xl text-orange-brand">GHS {Number(tutor.hourly_rate).toFixed(0)}</span>
           <span className="text-text-muted text-sm">/hr</span>
         </div>
-        <Link to={`/book/${tutor.listing_id}`} className="btn-primary text-sm py-2">
+        <Link to={`/book/${tutor.listing_id}`} className="bg-gradient-to-r from-red-brand to-orange-brand text-white px-5 py-2 rounded-lg font-medium text-sm hover:opacity-90 transition-opacity">
           Book Session
         </Link>
       </div>

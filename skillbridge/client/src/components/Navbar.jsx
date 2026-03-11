@@ -20,17 +20,19 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <Link to="/" className="flex items-center gap-2">
-            <BookOpen className="h-8 w-8 text-primary" />
-            <span className="font-display font-bold text-xl text-primary">SkillBridge</span>
+            <div className="w-8 h-8 bg-gradient-to-br from-red-brand to-orange-brand rounded-lg flex items-center justify-center">
+              <BookOpen className="h-5 w-5 text-white" />
+            </div>
+            <span className="font-display font-bold text-xl text-primary">Skill<span className="text-red-brand">Bridge</span></span>
           </Link>
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6">
-            <Link to="/browse" className="text-text-muted hover:text-primary font-medium transition-colors">Browse Tutors</Link>
+            <Link to="/browse" className="text-text-muted hover:text-red-brand font-medium transition-colors">Browse Tutors</Link>
             {isAuthenticated ? (
               <div className="relative">
                 <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center gap-2 text-text-main hover:text-primary font-medium transition-colors">
-                  <div className="w-8 h-8 bg-primary-light rounded-full flex items-center justify-center text-white text-sm font-bold">
+                  <div className="w-8 h-8 bg-gradient-to-br from-red-brand to-orange-brand rounded-full flex items-center justify-center text-white text-sm font-bold">
                     {user?.full_name?.charAt(0) || 'U'}
                   </div>
                   <span className="hidden lg:inline">{user?.full_name?.split(' ')[0]}</span>
@@ -42,22 +44,22 @@ export default function Navbar() {
                       <p className="font-medium text-sm">{user?.full_name}</p>
                       <p className="text-xs text-text-muted">{user?.email}</p>
                     </div>
-                    <Link to="/dashboard" onClick={() => setDropdownOpen(false)} className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50">
+                    <Link to="/dashboard" onClick={() => setDropdownOpen(false)} className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-orange-soft">
                       <LayoutDashboard className="h-4 w-4" /> Dashboard
                     </Link>
-                    <Link to="/dashboard/wallet" onClick={() => setDropdownOpen(false)} className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50">
+                    <Link to="/dashboard/wallet" onClick={() => setDropdownOpen(false)} className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-orange-soft">
                       <Wallet className="h-4 w-4" /> Wallet
                     </Link>
-                    <Link to="/dashboard/profile" onClick={() => setDropdownOpen(false)} className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50">
+                    <Link to="/dashboard/profile" onClick={() => setDropdownOpen(false)} className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-orange-soft">
                       <User className="h-4 w-4" /> Edit Profile
                     </Link>
                     {isAdmin && (
-                      <Link to="/admin" onClick={() => setDropdownOpen(false)} className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50 text-accent">
+                      <Link to="/admin" onClick={() => setDropdownOpen(false)} className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-orange-soft text-orange-brand">
                         <Shield className="h-4 w-4" /> Admin Panel
                       </Link>
                     )}
                     <hr className="my-1 border-border" />
-                    <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-2 text-sm text-danger hover:bg-gray-50 w-full">
+                    <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-2 text-sm text-danger hover:bg-red-50 w-full">
                       <LogOut className="h-4 w-4" /> Logout
                     </button>
                   </div>
@@ -65,8 +67,8 @@ export default function Navbar() {
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                <Link to="/login" className="text-primary font-medium hover:text-primary-light transition-colors">Login</Link>
-                <Link to="/register" className="btn-primary text-sm">Sign Up</Link>
+                <Link to="/login" className="text-primary font-medium hover:text-red-brand transition-colors">Login</Link>
+                <Link to="/register" className="bg-gradient-to-r from-red-brand to-orange-brand text-white px-5 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity text-sm">Sign Up</Link>
               </div>
             )}
           </div>
@@ -81,18 +83,18 @@ export default function Navbar() {
       {/* Mobile menu */}
       {mobileOpen && (
         <div className="md:hidden bg-white border-t border-border px-4 pb-4">
-          <Link to="/browse" onClick={() => setMobileOpen(false)} className="block py-3 text-text-muted hover:text-primary font-medium">Browse Tutors</Link>
+          <Link to="/browse" onClick={() => setMobileOpen(false)} className="block py-3 text-text-muted hover:text-red-brand font-medium">Browse Tutors</Link>
           {isAuthenticated ? (
             <>
               <Link to="/dashboard" onClick={() => setMobileOpen(false)} className="block py-3 text-text-muted hover:text-primary font-medium">Dashboard</Link>
               <Link to="/dashboard/wallet" onClick={() => setMobileOpen(false)} className="block py-3 text-text-muted hover:text-primary font-medium">Wallet</Link>
-              {isAdmin && <Link to="/admin" onClick={() => setMobileOpen(false)} className="block py-3 text-accent font-medium">Admin Panel</Link>}
+              {isAdmin && <Link to="/admin" onClick={() => setMobileOpen(false)} className="block py-3 text-orange-brand font-medium">Admin Panel</Link>}
               <button onClick={() => { handleLogout(); setMobileOpen(false); }} className="block py-3 text-danger font-medium">Logout</button>
             </>
           ) : (
             <div className="flex gap-3 pt-3">
               <Link to="/login" onClick={() => setMobileOpen(false)} className="btn-outline text-sm flex-1 text-center">Login</Link>
-              <Link to="/register" onClick={() => setMobileOpen(false)} className="btn-primary text-sm flex-1 text-center">Sign Up</Link>
+              <Link to="/register" onClick={() => setMobileOpen(false)} className="bg-gradient-to-r from-red-brand to-orange-brand text-white px-5 py-2 rounded-lg font-medium text-sm flex-1 text-center">Sign Up</Link>
             </div>
           )}
         </div>

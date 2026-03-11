@@ -7,11 +7,11 @@ const SKILL_COLORS = {
   'Video Editing (Adobe Premiere Pro, CapCut)': { bg: 'bg-red-100', text: 'text-red-700' },
   'Photography Editing (Adobe Lightroom, Adobe Photoshop)': { bg: 'bg-pink-100', text: 'text-pink-700' },
   'Cybersecurity Fundamentals': { bg: 'bg-slate-100', text: 'text-slate-700' },
-  'Mobile Application Development': { bg: 'bg-teal-100', text: 'text-teal-700' },
+  'Mobile Application Development': { bg: 'bg-amber-100', text: 'text-amber-700' },
 };
 
 export default function SkillBadge({ skill, size = 'md' }) {
-  const colors = SKILL_COLORS[skill] || { bg: 'bg-gray-100', text: 'text-gray-700' };
+  const colors = SKILL_COLORS[skill] || { bg: 'bg-orange-100', text: 'text-orange-700' };
   const shortName = skill?.split('(')[0]?.trim() || skill;
 
   const sizeClasses = size === 'sm' ? 'text-xs px-2 py-0.5' : 'text-sm px-3 py-1';

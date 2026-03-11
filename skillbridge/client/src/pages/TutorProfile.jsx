@@ -46,7 +46,7 @@ export default function TutorProfile() {
           {/* Profile Header */}
           <div className="card">
             <div className="flex flex-col sm:flex-row items-start gap-6">
-              <div className="w-24 h-24 bg-primary rounded-2xl flex items-center justify-center text-white font-display font-bold text-4xl flex-shrink-0">
+              <div className="w-24 h-24 bg-gradient-to-br from-red-brand to-orange-brand rounded-2xl flex items-center justify-center text-white font-display font-bold text-4xl flex-shrink-0">
                 {profile.full_name?.charAt(0)}
               </div>
               <div className="flex-1">
@@ -79,7 +79,7 @@ export default function TutorProfile() {
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`flex-1 py-2.5 px-4 rounded-md text-sm font-medium transition-colors capitalize ${
-                  activeTab === tab ? 'bg-white text-primary shadow-sm' : 'text-text-muted hover:text-text-main'
+                  activeTab === tab ? 'bg-white text-red-brand shadow-sm' : 'text-text-muted hover:text-text-main'
                 }`}
               >
                 {tab}
@@ -100,14 +100,14 @@ export default function TutorProfile() {
                     <h3 className="font-display font-semibold text-lg mb-3">Services Offered</h3>
                     <div className="space-y-3">
                       {profile.listings.map(listing => (
-                        <div key={listing.listing_id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div key={listing.listing_id} className="flex items-center justify-between p-4 bg-orange-soft rounded-lg border border-orange-brand/10">
                           <div>
                             <h4 className="font-medium">{listing.title}</h4>
                             <p className="text-text-muted text-sm mt-0.5">{listing.delivery_format === 'both' ? 'Online & In-Person' : listing.delivery_format === 'online' ? 'Online' : 'In-Person'}</p>
                           </div>
                           <div className="text-right">
-                            <p className="font-display font-bold text-accent">GHS {Number(listing.hourly_rate).toFixed(0)}/hr</p>
-                            <Link to={`/book/${listing.listing_id}`} className="text-primary text-sm font-medium hover:underline">Book Now</Link>
+                            <p className="font-display font-bold text-orange-brand">GHS {Number(listing.hourly_rate).toFixed(0)}/hr</p>
+                            <Link to={`/book/${listing.listing_id}`} className="text-red-brand text-sm font-medium hover:underline">Book Now</Link>
                           </div>
                         </div>
                       ))}
@@ -165,7 +165,7 @@ export default function TutorProfile() {
                             <div key={star} className="flex items-center gap-2 text-sm">
                               <span className="w-3 text-text-muted">{star}</span>
                               <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                                <div className="h-full bg-accent rounded-full" style={{ width: `${pct}%` }} />
+                                <div className="h-full bg-orange-brand rounded-full" style={{ width: `${pct}%` }} />
                               </div>
                               <span className="w-8 text-text-muted text-right">{count}</span>
                             </div>
@@ -184,7 +184,7 @@ export default function TutorProfile() {
                     <div key={review.review_id} className="card">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 bg-primary-light/20 rounded-full flex items-center justify-center text-primary font-bold text-sm">
+                          <div className="w-9 h-9 bg-gradient-to-br from-red-brand/20 to-orange-brand/20 rounded-full flex items-center justify-center text-red-brand font-bold text-sm">
                             {review.student_name?.charAt(0)}
                           </div>
                           <div>
@@ -215,9 +215,9 @@ export default function TutorProfile() {
                   <div key={listing.listing_id}>
                     <p className="text-sm text-text-muted">{listing.skill_name.split('(')[0].trim()}</p>
                     <div className="flex items-center justify-between mt-1">
-                      <p className="font-display font-bold text-2xl text-accent">GHS {Number(listing.hourly_rate).toFixed(0)}<span className="text-sm font-normal text-text-muted">/hr</span></p>
+                      <p className="font-display font-bold text-2xl text-orange-brand">GHS {Number(listing.hourly_rate).toFixed(0)}<span className="text-sm font-normal text-text-muted">/hr</span></p>
                     </div>
-                    <Link to={`/book/${listing.listing_id}`} className="btn-primary w-full mt-3 text-center block">
+                    <Link to={`/book/${listing.listing_id}`} className="bg-gradient-to-r from-red-brand to-orange-brand text-white w-full mt-3 text-center block px-6 py-2.5 rounded-lg font-medium hover:opacity-90 transition-opacity">
                       Book Now
                     </Link>
                   </div>

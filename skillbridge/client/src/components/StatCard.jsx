@@ -2,6 +2,8 @@ export default function StatCard({ title, value, icon: Icon, color = 'primary', 
   const colorMap = {
     primary: 'bg-primary/10 text-primary',
     accent: 'bg-accent/10 text-accent',
+    red: 'bg-red-100 text-red-700',
+    orange: 'bg-orange-100 text-orange-700',
     success: 'bg-green-100 text-green-700',
     danger: 'bg-red-100 text-red-700',
     warning: 'bg-yellow-100 text-yellow-700',

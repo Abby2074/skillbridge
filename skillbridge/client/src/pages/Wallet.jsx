@@ -64,7 +64,7 @@ export default function WalletPage() {
 
       {/* Balances */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="bg-gradient-to-r from-primary to-primary-light rounded-xl p-6 text-white">
+        <div className="bg-gradient-to-r from-primary via-primary to-red-brand/80 rounded-xl p-6 text-white">
           <p className="text-white/70 text-sm">Wallet Balance</p>
           <p className="font-display font-bold text-3xl mt-1">GHS {Number(user?.wallet_balance || 0).toFixed(2)}</p>
         </div>
@@ -93,8 +93,8 @@ export default function WalletPage() {
                 {(['mtn_momo', 'vodafone_cash', 'card']).map(m => {
                   const Icon = methodIcons[m];
                   return (
-                    <label key={m} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${topUpMethod === m ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/30'}`}>
-                      <input type="radio" name="topup-method" value={m} checked={topUpMethod === m} onChange={() => setTopUpMethod(m)} className="text-primary" />
+                    <label key={m} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${topUpMethod === m ? 'border-orange-brand bg-orange-soft' : 'border-border hover:border-orange-brand/30'}`}>
+                      <input type="radio" name="topup-method" value={m} checked={topUpMethod === m} onChange={() => setTopUpMethod(m)} className="text-orange-brand" />
                       <Icon className="h-4 w-4 text-text-muted" />
                       <span className="text-sm">{methodLabels[m]}</span>
                     </label>
@@ -104,7 +104,7 @@ export default function WalletPage() {
             </div>
             <div className="flex gap-2">
               {[10, 50, 100, 200].map(amt => (
-                <button key={amt} onClick={() => setTopUpAmount(String(amt))} className="flex-1 py-2 rounded-lg border border-border text-sm font-medium hover:border-primary hover:text-primary transition-colors">
+                <button key={amt} onClick={() => setTopUpAmount(String(amt))} className="flex-1 py-2 rounded-lg border border-border text-sm font-medium hover:border-orange-brand hover:text-orange-brand transition-colors">
                   GHS {amt}
                 </button>
               ))}
