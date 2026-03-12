@@ -9,8 +9,8 @@ export default {
       colors: {
         primary: { DEFAULT: '#1B4F72', light: '#2E86C1' },
         accent: { DEFAULT: '#E67E22', light: '#F39C12' },
-        red: { brand: '#B91C1C', light: '#DC2626', soft: '#FEE2E2' },
-        orange: { brand: '#EA580C', light: '#F97316', soft: '#FFF7ED' },
+        red: { brand: '#EF4444', light: '#F87171', soft: '#FEE2E2' },
+        orange: { brand: '#F97316', light: '#FB923C', soft: '#FFF7ED' },
         success: '#1E8449',
         danger: '#C0392B',
         warning: '#B7950B',
