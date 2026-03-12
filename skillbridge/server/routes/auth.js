@@ -7,6 +7,9 @@ const { body, validationResult } = require('express-validator');
 const db = require('../db');
 const { authenticateToken, JWT_SECRET } = require('../middleware/auth');
 
+// Access fee for non-student users (GHS)
+const ACCESS_FEE = 50;
+
 // POST /api/auth/register
 router.post('/register', [
   body('full_name').trim().notEmpty().withMessage('Full name is required'),
@@ -21,7 +24,7 @@ router.post('/register', [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { full_name, email, password, role, institution, programme, year_of_study, bio, hourly_rate, skill_ids } = req.body;
+    const { full_name, email, password, role, institution, programme, year_of_study, bio, hourly_rate, skill_ids, access_fee_reference } = req.body;
 
     // Check if email already exists
     const existing = db.prepare('SELECT user_id FROM users WHERE email = ?').get(email);
@@ -29,14 +32,37 @@ router.post('/register', [
       return res.status(409).json({ error: 'Email already registered' });
     }
 
+    // Determine account type based on email domain
+    const isStudentEmail = email.toLowerCase().endsWith('.edu.gh');
+    const accountType = isStudentEmail ? 'student' : 'external';
+
+    // Non-student emails require access fee payment
+    if (!isStudentEmail && !access_fee_reference) {
+      return res.status(402).json({
+        error: 'Non-student email detected. A one-time access fee of GHS 50 is required to use SkillBridge.',
+        requires_payment: true,
+        access_fee: ACCESS_FEE,
+        account_type: 'external'
+      });
+    }
+
     const user_id = uuidv4();
     const password_hash = bcrypt.hashSync(password, 10);
     const now = new Date().toISOString();
+    const accessFeePaid = isStudentEmail ? 0 : 1;
 
-    db.prepare(`INSERT INTO users (user_id, full_name, email, password_hash, role, institution, programme, year_of_study, bio, wallet_balance, earnings_balance, is_verified, is_active, is_admin, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 1, 1, 0, ?)`).run(
-      user_id, full_name, email, password_hash, role, institution, programme || null, year_of_study || null, bio || null, now
+    db.prepare(`INSERT INTO users (user_id, full_name, email, password_hash, role, institution, programme, year_of_study, bio, wallet_balance, earnings_balance, is_verified, is_active, is_admin, account_type, access_fee_paid, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 1, 1, 0, ?, ?, ?)`).run(
+      user_id, full_name, email, password_hash, role, institution, programme || null, year_of_study || null, bio || null, accountType, accessFeePaid, now
     );
+
+    // Record access fee transaction for non-students
+    if (!isStudentEmail) {
+      db.prepare(`INSERT INTO transactions (transaction_id, user_id, booking_id, transaction_type, amount, direction, status, payment_reference, created_at)
+        VALUES (?, ?, NULL, 'top_up', ?, 'credit', 'completed', ?, ?)`).run(
+        uuidv4(), user_id, ACCESS_FEE, access_fee_reference, now
+      );
+    }
 
     // If tutor, create listings for selected skills
     if ((role === 'tutor' || role === 'both') && skill_ids && skill_ids.length > 0) {
@@ -54,7 +80,7 @@ router.post('/register', [
 
     res.status(201).json({
       token,
-      user: { user_id, full_name, email, role, institution, is_admin: 0 }
+      user: { user_id, full_name, email, role, institution, is_admin: 0, account_type: accountType }
     });
   } catch (err) {
     console.error('Registration error:', err);
@@ -110,6 +136,7 @@ router.post('/login', [
         is_admin: user.is_admin,
         wallet_balance: user.wallet_balance,
         earnings_balance: user.earnings_balance,
+        account_type: user.account_type,
       }
     });
   } catch (err) {
@@ -121,7 +148,7 @@ router.post('/login', [
 // GET /api/auth/me
 router.get('/me', authenticateToken, (req, res) => {
   try {
-    const user = db.prepare('SELECT user_id, full_name, email, role, institution, programme, year_of_study, bio, profile_photo_url, wallet_balance, earnings_balance, is_verified, is_active, is_admin, created_at FROM users WHERE user_id = ?').get(req.user.user_id);
+    const user = db.prepare('SELECT user_id, full_name, email, role, institution, programme, year_of_study, bio, profile_photo_url, wallet_balance, earnings_balance, is_verified, is_active, is_admin, account_type, created_at FROM users WHERE user_id = ?').get(req.user.user_id);
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });

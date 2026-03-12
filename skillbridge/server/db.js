@@ -28,6 +28,8 @@ function initializeDatabase() {
       is_verified INTEGER NOT NULL DEFAULT 0,
       is_active INTEGER NOT NULL DEFAULT 1,
       is_admin INTEGER NOT NULL DEFAULT 0,
+      account_type TEXT NOT NULL DEFAULT 'student' CHECK(account_type IN ('student','external')),
+      access_fee_paid INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL,
       last_login_at TEXT
     );
@@ -183,6 +185,10 @@ function seedDatabase() {
     { name: 'Efua Adjei', email: 'efua@knust.edu.gh', institution: 'KNUST', programme: 'Fine Art', year: 3, skill: 'Photography Editing (Adobe Lightroom, Adobe Photoshop)', rate: 40, bio: 'Professional photographer and editor. I teach color grading, retouching, and creative editing techniques using Lightroom and Photoshop.', sessions: 15, photo: null },
     { name: 'Nana Osei', email: 'nana@ashesi.edu.gh', institution: 'Ashesi University', programme: 'Computer Engineering', year: 4, skill: 'Mobile Application Development', rate: 75, bio: 'Mobile app developer with published apps on Google Play. I teach React Native and Flutter for cross-platform development.', sessions: 30, photo: null },
     { name: 'Akosua Frimpong', email: 'akosua@ug.edu.gh', institution: 'University of Ghana', programme: 'Information Studies', year: 3, skill: 'Database Design and SQL', rate: 65, bio: 'Database specialist experienced in MySQL, PostgreSQL, and SQLite. I teach relational database design, normalization, and complex SQL queries.', sessions: 24, photo: null },
+    { name: 'Priscilla Agyemang', email: 'priscilla@ashesi.edu.gh', institution: 'Ashesi University', programme: 'Computer Science', year: 4, skill: 'Python Programming', rate: 55, bio: 'Python enthusiast with experience in Django, Flask, and data science libraries. I also teach web development with JavaScript and React. I love helping students build real projects!', sessions: 38, photo: null, extraSkills: ['Web Development (HTML, CSS, JavaScript)'] },
+    { name: 'Samuel Adu-Gyamfi', email: 'samuel@ug.edu.gh', institution: 'University of Ghana', programme: 'Computer Engineering', year: 3, skill: 'Mobile Application Development', rate: 70, bio: 'Mobile and web developer with published apps on the Play Store. I teach Flutter, React Native, and also full-stack JavaScript development.', sessions: 27, photo: null, extraSkills: ['Web Development (HTML, CSS, JavaScript)', 'Database Design and SQL'] },
+    { name: 'Mercy Tetteh', email: 'mercy@knust.edu.gh', institution: 'KNUST', programme: 'Multimedia Art', year: 4, skill: 'Graphic Design (Canva, Adobe Photoshop, Figma)', rate: 50, bio: 'Award-winning graphic designer and video editor. I teach everything from branding to motion graphics. My students leave with portfolio-ready work.', sessions: 42, photo: null, extraSkills: ['Video Editing (Adobe Premiere Pro, CapCut)', 'Photography Editing (Adobe Lightroom, Adobe Photoshop)'] },
+    { name: 'Isaac Quaye', email: 'isaac@gimpa.edu.gh', institution: 'GIMPA', programme: 'Information Technology', year: 3, skill: 'Cybersecurity Fundamentals', rate: 85, bio: 'Cybersecurity specialist and data analyst. I teach network security, ethical hacking, and also advanced data analysis with Excel, Power BI, and Python.', sessions: 31, photo: null, extraSkills: ['Data Analysis (Microsoft Excel, Power BI, Google Sheets)', 'Python Programming'] },
   ];
 
   const insertUser = db.prepare(`INSERT INTO users (user_id, full_name, email, password_hash, role, institution, programme, year_of_study, bio, profile_photo_url, wallet_balance, earnings_balance, is_verified, is_active, is_admin, created_at)
@@ -202,9 +208,18 @@ function seedDatabase() {
     const earnings = tutor.rate * tutor.sessions * 0.9;
     insertUser.run(tutorId, tutor.name, tutor.email, hashPassword('password123'), 'tutor', tutor.institution, tutor.programme, tutor.year, tutor.bio, tutor.photo, 0, Math.round(earnings * 0.1), 1, 1, 0, now);
 
+    // Primary listing
     const listingId = uuidv4();
     listingIds.push(listingId);
     insertListing.run(listingId, tutorId, skillIds[tutor.skill], `${tutor.skill.split('(')[0].trim()} Tutoring`, `One-on-one ${tutor.skill} tutoring session. ${tutor.bio}`, tutor.rate, 'both', 'active', now, now);
+
+    // Additional skill listings for multi-skill tutors
+    if (tutor.extraSkills) {
+      for (const extraSkill of tutor.extraSkills) {
+        const extraListingId = uuidv4();
+        insertListing.run(extraListingId, tutorId, skillIds[extraSkill], `${extraSkill.split('(')[0].trim()} Tutoring`, `One-on-one ${extraSkill} tutoring session. ${tutor.bio}`, tutor.rate, 'both', 'active', now, now);
+      }
+    }
 
     const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
     const times = [['09:00', '10:00'], ['10:00', '11:00'], ['14:00', '15:00'], ['15:00', '16:00']];
@@ -224,6 +239,10 @@ function seedDatabase() {
     { name: 'Kweku Mensah', email: 'kweku@ashesi.edu.gh', institution: 'Ashesi University', programme: 'Management Information Systems', year: 3, wallet: 200.00 },
     { name: 'Fatima Issah', email: 'fatima@ucc.edu.gh', institution: 'University of Cape Coast', programme: 'Education', year: 2, wallet: 50.00 },
     { name: 'Daniel Asare', email: 'daniel@gimpa.edu.gh', institution: 'GIMPA', programme: 'Marketing', year: 1, wallet: 0.00 },
+    { name: 'Selina Ocansey', email: 'selina@ug.edu.gh', institution: 'University of Ghana', programme: 'Information Technology', year: 2, wallet: 150.00 },
+    { name: 'Benjamin Appiah', email: 'benjamin@ashesi.edu.gh', institution: 'Ashesi University', programme: 'Engineering', year: 1, wallet: 75.00 },
+    { name: 'Rita Mensah', email: 'rita@knust.edu.gh', institution: 'KNUST', programme: 'Computer Science', year: 3, wallet: 220.00 },
+    { name: 'Michael Ofori', email: 'michael@ucc.edu.gh', institution: 'University of Cape Coast', programme: 'Mathematics', year: 2, wallet: 40.00 },
   ];
 
   const studentIds = [];

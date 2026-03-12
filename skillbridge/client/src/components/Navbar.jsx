@@ -20,15 +20,15 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-red-brand to-orange-brand rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-red-brand rounded-lg flex items-center justify-center">
               <BookOpen className="h-5 w-5 text-white" />
             </div>
-            <span className="font-display font-bold text-xl text-primary">Skill<span className="text-red-brand">Bridge</span></span>
+            <span className="font-display font-bold text-xl text-red-brand">Skill<span className="text-orange-brand">Bridge</span></span>
           </Link>
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6">
-            <Link to="/browse" className="text-text-muted hover:text-red-brand font-medium transition-colors">Browse Tutors</Link>
+            <Link to="/browse" className="text-text-muted hover:text-red-brand font-medium transition-colors">Browse <span className="text-red-brand">Tutors</span></Link>
             {isAuthenticated ? (
               <div className="relative">
                 <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center gap-2 text-text-main hover:text-primary font-medium transition-colors">

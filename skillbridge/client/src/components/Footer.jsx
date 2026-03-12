@@ -8,7 +8,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-7 h-7 bg-gradient-to-br from-red-brand to-orange-brand rounded-lg flex items-center justify-center">
+              <div className="w-7 h-7 bg-red-brand rounded-lg flex items-center justify-center">
                 <BookOpen className="h-4 w-4 text-white" />
               </div>
               <span className="font-display font-bold text-lg">Skill<span className="text-orange-light">Bridge</span></span>

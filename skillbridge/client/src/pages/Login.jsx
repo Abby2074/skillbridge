@@ -95,26 +95,6 @@ export default function Login() {
               </button>
             </form>
 
-            {/* Demo accounts */}
-            <div className="mt-6 pt-6 border-t border-border">
-              <p className="text-text-muted text-xs text-center mb-3">Demo Accounts (click to fill)</p>
-              <div className="grid grid-cols-1 gap-2">
-                {[
-                  { label: 'Admin', email: 'admin@skillbridge.gh', password: 'admin123' },
-                  { label: 'Student (Emmanuel)', email: 'emmanuel@ug.edu.gh', password: 'password123' },
-                  { label: 'Tutor (Kwame)', email: 'kwame@ug.edu.gh', password: 'password123' },
-                ].map(demo => (
-                  <button
-                    key={demo.email}
-                    onClick={() => { setEmail(demo.email); setPassword(demo.password); }}
-                    className="text-left px-3 py-2 bg-orange-soft rounded-lg hover:bg-orange-brand/10 transition-colors text-sm"
-                  >
-                    <span className="font-medium text-red-brand">{demo.label}</span>
-                    <span className="text-text-muted ml-2">{demo.email}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
 
           <p className="text-center text-text-muted text-sm mt-6">

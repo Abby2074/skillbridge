@@ -79,7 +79,7 @@ export default function Catalog() {
   return (
     <div>
       {/* Hero Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-primary via-primary to-sidebar">
+      <div className="relative overflow-hidden bg-gradient-to-r from-red-brand via-red-brand to-orange-brand/80">
         <div className="absolute inset-0 opacity-10">
           <img
             src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=1920&q=80"

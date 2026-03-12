@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { skillsAPI } from '../api';
-import { BookOpen, User, GraduationCap, Briefcase, ArrowRight, ArrowLeft, Check } from 'lucide-react';
+import { BookOpen, User, GraduationCap, Briefcase, ArrowRight, ArrowLeft, Check, AlertTriangle, CreditCard } from 'lucide-react';
 
 export default function Register() {
   const [step, setStep] = useState(1);
@@ -14,6 +14,9 @@ export default function Register() {
     bio: '', hourly_rate: '', skill_ids: [],
   });
   const [errors, setErrors] = useState({});
+  const [showPayment, setShowPayment] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('mtn_momo');
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
   const { register } = useAuth();
   const { addToast } = useToast();
   const navigate = useNavigate();
@@ -24,6 +27,8 @@ export default function Register() {
     setFormData(prev => ({ ...prev, [field]: value }));
     setErrors(prev => ({ ...prev, [field]: null }));
   };
+
+  const isStudentEmail = formData.email.toLowerCase().endsWith('.edu.gh');
 
   const validateStep1 = () => {
     if (!formData.role) { setErrors({ role: 'Please select a role' }); return false; }
@@ -45,6 +50,11 @@ export default function Register() {
     if (step === 1 && validateStep1()) {
       setStep(2);
     } else if (step === 2 && validateStep2()) {
+      // Check if non-student email — show payment step
+      if (!isStudentEmail) {
+        setShowPayment(true);
+        return;
+      }
       if (formData.role === 'student') {
         handleSubmit();
       } else {
@@ -53,16 +63,38 @@ export default function Register() {
     }
   };
 
-  const handleSubmit = async () => {
+  const handlePaymentAndContinue = async () => {
+    setPaymentProcessing(true);
+    // Simulate payment processing
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    setPaymentProcessing(false);
+    setShowPayment(false);
+
+    const paymentRef = `ACCESS-${Date.now()}`;
+    if (formData.role === 'student') {
+      handleSubmit(paymentRef);
+    } else {
+      // Store the payment reference and move to step 3
+      setFormData(prev => ({ ...prev, access_fee_reference: paymentRef }));
+      setStep(3);
+    }
+  };
+
+  const handleSubmit = async (paymentRef) => {
     try {
       await register({
         ...formData,
         year_of_study: formData.year_of_study ? parseInt(formData.year_of_study) : null,
         hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : 50,
+        access_fee_reference: paymentRef || formData.access_fee_reference || undefined,
       });
       addToast('Account created successfully! Welcome to SkillBridge.');
       navigate('/dashboard');
     } catch (err) {
+      if (err.response?.data?.requires_payment) {
+        setShowPayment(true);
+        return;
+      }
       const msg = err.response?.data?.error || err.response?.data?.errors?.[0]?.msg || 'Registration failed';
       addToast(msg, 'error');
     }
@@ -115,6 +147,51 @@ export default function Register() {
             ))}
           </div>
 
+          {/* Payment Modal for Non-Student Emails */}
+          {showPayment && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="fixed inset-0 bg-black/50" onClick={() => setShowPayment(false)} />
+              <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+                <div className="text-center mb-4">
+                  <div className="w-14 h-14 bg-red-brand/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <AlertTriangle className="h-7 w-7 text-red-brand" />
+                  </div>
+                  <h3 className="font-display font-bold text-lg">Non-Student Email Detected</h3>
+                  <p className="text-text-muted text-sm mt-2">
+                    SkillBridge is designed for university students. Since <strong>{formData.email}</strong> is not a <code>.edu.gh</code> email, a one-time access fee is required.
+                  </p>
+                </div>
+
+                <div className="bg-orange-soft rounded-xl p-4 mb-4 border border-orange-brand/10">
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">One-Time Access Fee</span>
+                    <span className="font-display font-bold text-xl text-red-brand">GHS 50.00</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2 mb-4">
+                  <label className="block text-sm font-medium mb-1">Payment Method</label>
+                  {['mtn_momo', 'vodafone_cash', 'card'].map(m => (
+                    <label key={m} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${paymentMethod === m ? 'border-red-brand bg-red-brand/5' : 'border-border hover:border-red-brand/30'}`}>
+                      <input type="radio" name="pay-method" value={m} checked={paymentMethod === m} onChange={() => setPaymentMethod(m)} className="text-red-brand" />
+                      <CreditCard className="h-4 w-4 text-text-muted" />
+                      <span className="text-sm">{m === 'mtn_momo' ? 'MTN MoMo' : m === 'vodafone_cash' ? 'Vodafone Cash' : 'Card Payment'}</span>
+                    </label>
+                  ))}
+                </div>
+
+                <div className="flex gap-3">
+                  <button onClick={() => setShowPayment(false)} className="flex-1 py-2.5 border border-border rounded-lg text-sm font-medium hover:bg-gray-50">
+                    Cancel
+                  </button>
+                  <button onClick={handlePaymentAndContinue} disabled={paymentProcessing} className="flex-1 bg-gradient-to-r from-red-brand to-orange-brand text-white py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50">
+                    {paymentProcessing ? 'Processing...' : 'Pay GHS 50 & Continue'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="card">
             {/* Step 1: Role Selection */}
             {step === 1 && (
@@ -157,6 +234,12 @@ export default function Register() {
                   <label className="block text-sm font-medium mb-1">Email</label>
                   <input type="email" value={formData.email} onChange={e => updateField('email', e.target.value)} className="input-field" placeholder="e.g. kwame@university.edu.gh" />
                   {errors.email && <p className="text-danger text-xs mt-1">{errors.email}</p>}
+                  {formData.email && !isStudentEmail && formData.email.includes('@') && (
+                    <p className="text-orange-brand text-xs mt-1 flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      Non-student email. A one-time access fee of GHS 50 will be required.
+                    </p>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -242,7 +325,7 @@ export default function Register() {
                   {step === 2 && formData.role === 'student' ? 'Create Account' : 'Next'} <ArrowRight className="h-4 w-4" />
                 </button>
               ) : (
-                <button onClick={handleSubmit} className="bg-gradient-to-r from-red-brand to-orange-brand text-white px-6 py-2.5 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-1">
+                <button onClick={() => handleSubmit()} className="bg-gradient-to-r from-red-brand to-orange-brand text-white px-6 py-2.5 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-1">
                   Create Account <Check className="h-4 w-4" />
                 </button>
               )}

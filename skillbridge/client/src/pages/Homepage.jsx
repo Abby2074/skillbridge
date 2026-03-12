@@ -38,7 +38,7 @@ export default function Homepage() {
             alt="Students collaborating"
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/90 via-primary/80 to-red-brand/70" />
+          <div className="absolute inset-0 bg-gradient-to-r from-red-brand/90 via-red-brand/80 to-orange-brand/70" />
         </div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
           <div className="max-w-3xl">
@@ -53,7 +53,7 @@ export default function Homepage() {
               Connect with fellow students who excel in tech skills. Book one-on-one tutoring sessions, learn at your pace, and pay securely with your digital wallet.
             </p>
             <div className="flex flex-wrap gap-4 mt-8">
-              <Link to="/browse" className="bg-gradient-to-r from-accent to-orange-brand text-white inline-flex items-center gap-2 text-lg px-8 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity shadow-lg shadow-orange-brand/30">
+              <Link to="/browse" className="bg-white text-red-brand inline-flex items-center gap-2 text-lg px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-lg">
                 Browse Tutors <ArrowRight className="h-5 w-5" />
               </Link>
               <Link to="/register" className="bg-white/10 backdrop-blur-sm text-white px-8 py-3 rounded-lg font-medium hover:bg-white/20 transition-colors text-lg border border-white/20">
@@ -69,7 +69,7 @@ export default function Homepage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="grid grid-cols-3 gap-8 text-center">
             <div>
-              <p className="font-display font-bold text-3xl sm:text-4xl text-primary">{stats?.tutors || 0}+</p>
+              <p className="font-display font-bold text-3xl sm:text-4xl text-red-brand">{stats?.tutors || 0}+</p>
               <p className="text-text-muted mt-1">Active Tutors</p>
             </div>
             <div>
@@ -144,7 +144,7 @@ export default function Homepage() {
       {/* Skill Categories */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-10">
-          <h2 className="font-display font-bold text-3xl text-text-main">Explore Skill Categories</h2>
+          <h2 className="font-display font-bold text-3xl text-text-main">Explore <span className="text-red-brand">Skill Categories</span></h2>
           <p className="text-text-muted mt-2">Find expert peer tutors across 9 in-demand tech skills</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -186,7 +186,7 @@ export default function Homepage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between mb-10">
             <div>
-              <h2 className="font-display font-bold text-3xl text-text-main">Top-Rated Tutors</h2>
+              <h2 className="font-display font-bold text-3xl text-text-main">Top-Rated <span className="text-red-brand">Tutors</span></h2>
               <p className="text-text-muted mt-2">Learn from our highest-rated peer tutors</p>
             </div>
             <Link to="/browse" className="hidden sm:inline-flex items-center gap-1 text-red-brand font-medium hover:text-red-light">
@@ -208,7 +208,7 @@ export default function Homepage() {
         <div className="absolute inset-0 bg-gradient-to-br from-orange-soft via-white to-red-50/30" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center mb-12">
-            <h2 className="font-display font-bold text-3xl text-text-main">How It Works</h2>
+            <h2 className="font-display font-bold text-3xl text-text-main">How It <span className="text-red-brand">Works</span></h2>
             <p className="text-text-muted mt-2">Get started in 4 simple steps</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -276,7 +276,7 @@ export default function Homepage() {
       <section className="bg-gradient-to-br from-orange-soft via-white to-red-50/30 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-10">
-            <h2 className="font-display font-bold text-3xl text-text-main">What Students Say</h2>
+            <h2 className="font-display font-bold text-3xl text-text-main">What Students <span className="text-red-brand">Say</span></h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {testimonials.map((t, i) => (
