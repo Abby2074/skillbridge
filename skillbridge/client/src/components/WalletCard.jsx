@@ -3,7 +3,7 @@ import { Wallet, ArrowUpRight } from 'lucide-react';
 
 export default function WalletCard({ balance = 0, type = 'wallet' }) {
   return (
-    <div className={`rounded-xl p-6 text-white ${type === 'earnings' ? 'bg-gradient-to-r from-green-600 to-green-500' : 'bg-gradient-to-r from-primary via-primary to-red-brand/80'}`}>
+    <div className={`rounded-xl p-6 text-white ${type === 'earnings' ? 'bg-gradient-to-r from-green-600 to-green-500' : 'bg-gradient-to-r from-red-brand via-red-brand to-orange-brand/80'}`}>
       <div className="flex items-center justify-between">
         <div>
           <p className="text-white/70 text-sm font-medium">{type === 'earnings' ? 'Earnings Balance' : 'Wallet Balance'}</p>

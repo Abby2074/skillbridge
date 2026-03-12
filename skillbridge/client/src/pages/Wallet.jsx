@@ -64,7 +64,7 @@ export default function WalletPage() {
 
       {/* Balances */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="bg-gradient-to-r from-primary via-primary to-red-brand/80 rounded-xl p-6 text-white">
+        <div className="bg-gradient-to-r from-red-brand via-red-brand to-orange-brand/80 rounded-xl p-6 text-white">
           <p className="text-white/70 text-sm">Wallet Balance</p>
           <p className="font-display font-bold text-3xl mt-1">GHS {Number(user?.wallet_balance || 0).toFixed(2)}</p>
         </div>
@@ -112,7 +112,7 @@ export default function WalletPage() {
             <button
               onClick={() => topUpMutation.mutate({ amount: parseFloat(topUpAmount), method: topUpMethod })}
               disabled={!topUpAmount || parseFloat(topUpAmount) < 1 || topUpMutation.isPending}
-              className="btn-primary w-full disabled:opacity-50"
+              className="w-full bg-gradient-to-r from-red-brand to-orange-brand text-white px-6 py-2.5 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               {topUpMutation.isPending ? 'Processing...' : `Top Up GHS ${topUpAmount || '0'}`}
             </button>
