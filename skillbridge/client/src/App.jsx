@@ -16,6 +16,11 @@ import Dashboard from './pages/Dashboard';
 import WalletPage from './pages/Wallet';
 import AdminDashboard from './pages/AdminDashboard';
 import Support from './pages/Support';
+import Marketplace from './pages/Marketplace';
+import GigDetail from './pages/GigDetail';
+import ServiceRequests from './pages/ServiceRequests';
+import ServiceRequestDetail from './pages/ServiceRequestDetail';
+import PostServiceRequest from './pages/PostServiceRequest';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
@@ -49,6 +54,13 @@ export default function App() {
             <Route path="/book/:listingId" element={<BookingForm />} />
             <Route path="/support" element={<Support />} />
 
+            {/* Service Marketplace Routes */}
+            <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/gig/:gigId" element={<GigDetail />} />
+            <Route path="/service-requests" element={<ServiceRequests />} />
+            <Route path="/service-request/:requestId" element={<ServiceRequestDetail />} />
+            <Route path="/post-request" element={<ProtectedRoute><PostServiceRequest /></ProtectedRoute>} />
+
             {/* Protected Dashboard Routes */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>}>
               <Route path="wallet" element={<WalletPage />} />
@@ -57,6 +69,10 @@ export default function App() {
             <Route path="/dashboard/listings" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/dashboard/availability" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/dashboard/earnings" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/dashboard/my-gigs" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/dashboard/service-orders" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/dashboard/service-messages" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/dashboard/my-requests" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/dashboard/profile" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
             {/* Admin Routes */}

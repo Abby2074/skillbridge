@@ -15,7 +15,7 @@ router.post('/register', [
   body('full_name').trim().notEmpty().withMessage('Full name is required'),
   body('email').isEmail().withMessage('Valid email is required'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-  body('role').isIn(['student', 'tutor', 'both']).withMessage('Role must be student, tutor, or both'),
+  body('role').isIn(['student', 'tutor', 'both', 'buyer']).withMessage('Role must be student, tutor, both, or buyer'),
   body('institution').trim().notEmpty().withMessage('Institution is required'),
 ], (req, res) => {
   try {
@@ -32,9 +32,17 @@ router.post('/register', [
       return res.status(409).json({ error: 'Email already registered' });
     }
 
-    // Determine account type based on email domain
-    const isStudentEmail = email.toLowerCase().endsWith('.edu.gh');
+    // Determine if user is a student based on email domain
+    const studentDomains = ['.edu', '.edu.gh', '.ac.gh', '.ug.edu.gh', '.knust.edu.gh', '.ashesi.edu.gh', '.ucc.edu.gh', '.gimpa.edu.gh', '.uew.edu.gh', '.upsa.edu.gh', '.gctu.edu.gh', '.umat.edu.gh', '.uds.edu.gh'];
+    const emailLower = email.toLowerCase();
+    const is_student = studentDomains.some(domain => emailLower.endsWith(domain)) ? 1 : 0;
+    const isStudentEmail = is_student === 1;
     const accountType = isStudentEmail ? 'student' : 'external';
+
+    // Non-students can only register as buyers
+    if (!is_student && (role === 'tutor' || role === 'both')) {
+      return res.status(400).json({ error: 'Only students with a valid university email can register as tutors or freelancers. You can register as a buyer.' });
+    }
 
     // Non-student emails require access fee payment
     if (!isStudentEmail && !access_fee_reference) {
@@ -51,9 +59,9 @@ router.post('/register', [
     const now = new Date().toISOString();
     const accessFeePaid = isStudentEmail ? 0 : 1;
 
-    db.prepare(`INSERT INTO users (user_id, full_name, email, password_hash, role, institution, programme, year_of_study, bio, wallet_balance, earnings_balance, is_verified, is_active, is_admin, account_type, access_fee_paid, created_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 1, 1, 0, ?, ?, ?)`).run(
-      user_id, full_name, email, password_hash, role, institution, programme || null, year_of_study || null, bio || null, accountType, accessFeePaid, now
+    db.prepare(`INSERT INTO users (user_id, full_name, email, password_hash, role, is_student, institution, programme, year_of_study, bio, wallet_balance, earnings_balance, is_verified, is_active, is_admin, account_type, access_fee_paid, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 1, 1, 0, ?, ?, ?)`).run(
+      user_id, full_name, email, password_hash, role, is_student, institution, programme || null, year_of_study || null, bio || null, accountType, accessFeePaid, now
     );
 
     // Record access fee transaction for non-students
@@ -76,11 +84,11 @@ router.post('/register', [
       }
     }
 
-    const token = jwt.sign({ user_id, email, role, is_admin: 0, full_name }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ user_id, email, role, is_admin: 0, is_student, full_name }, JWT_SECRET, { expiresIn: '7d' });
 
     res.status(201).json({
       token,
-      user: { user_id, full_name, email, role, institution, is_admin: 0, account_type: accountType }
+      user: { user_id, full_name, email, role, is_student, institution, is_admin: 0, account_type: accountType }
     });
   } catch (err) {
     console.error('Registration error:', err);
@@ -122,6 +130,7 @@ router.post('/login', [
       email: user.email,
       role: user.role,
       is_admin: user.is_admin,
+      is_student: user.is_student,
       full_name: user.full_name
     }, JWT_SECRET, { expiresIn: '7d' });
 
@@ -132,6 +141,7 @@ router.post('/login', [
         full_name: user.full_name,
         email: user.email,
         role: user.role,
+        is_student: user.is_student,
         institution: user.institution,
         is_admin: user.is_admin,
         wallet_balance: user.wallet_balance,
@@ -148,7 +158,7 @@ router.post('/login', [
 // GET /api/auth/me
 router.get('/me', authenticateToken, (req, res) => {
   try {
-    const user = db.prepare('SELECT user_id, full_name, email, role, institution, programme, year_of_study, bio, profile_photo_url, wallet_balance, earnings_balance, is_verified, is_active, is_admin, account_type, created_at FROM users WHERE user_id = ?').get(req.user.user_id);
+    const user = db.prepare('SELECT user_id, full_name, email, role, is_student, institution, programme, year_of_study, bio, profile_photo_url, wallet_balance, earnings_balance, is_verified, is_active, is_admin, account_type, created_at FROM users WHERE user_id = ?').get(req.user.user_id);
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' });

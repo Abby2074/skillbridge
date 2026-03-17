@@ -17,7 +17,8 @@ function initializeDatabase() {
       full_name TEXT NOT NULL,
       email TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
-      role TEXT NOT NULL CHECK(role IN ('student','tutor','both')),
+      role TEXT NOT NULL CHECK(role IN ('student','tutor','both','buyer')),
+      is_student INTEGER NOT NULL DEFAULT 0,
       institution TEXT NOT NULL,
       programme TEXT,
       year_of_study INTEGER,
@@ -87,7 +88,7 @@ function initializeDatabase() {
       transaction_id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES users(user_id),
       booking_id TEXT REFERENCES bookings(booking_id),
-      transaction_type TEXT NOT NULL CHECK(transaction_type IN ('top_up','session_payment','commission','tutor_earnings','refund','withdrawal')),
+      transaction_type TEXT NOT NULL CHECK(transaction_type IN ('top_up','session_payment','commission','tutor_earnings','refund','withdrawal','service_payment','service_escrow','service_earnings','service_commission')),
       amount REAL NOT NULL,
       direction TEXT NOT NULL CHECK(direction IN ('credit','debit')),
       status TEXT NOT NULL DEFAULT 'completed' CHECK(status IN ('pending','completed','failed')),
@@ -134,6 +135,109 @@ function initializeDatabase() {
       message TEXT NOT NULL,
       created_at TEXT NOT NULL
     );
+
+    -- Service Marketplace Tables
+
+    CREATE TABLE IF NOT EXISTS service_categories (
+      category_id TEXT PRIMARY KEY,
+      category_name TEXT NOT NULL UNIQUE,
+      description TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS service_category_requests (
+      request_id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(user_id),
+      category_name TEXT NOT NULL,
+      description TEXT,
+      status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','declined')),
+      reviewed_by TEXT REFERENCES users(user_id),
+      submitted_at TEXT NOT NULL,
+      reviewed_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS service_gigs (
+      gig_id TEXT PRIMARY KEY,
+      freelancer_id TEXT NOT NULL REFERENCES users(user_id),
+      category_id TEXT NOT NULL REFERENCES service_categories(category_id),
+      title TEXT NOT NULL,
+      description TEXT NOT NULL,
+      min_price REAL NOT NULL,
+      max_price REAL NOT NULL,
+      delivery_time TEXT,
+      delivery_format TEXT NOT NULL DEFAULT 'remote' CHECK(delivery_format IN ('remote','in_person','both')),
+      status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','paused','archived')),
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS service_requests (
+      request_id TEXT PRIMARY KEY,
+      buyer_id TEXT NOT NULL REFERENCES users(user_id),
+      category_id TEXT REFERENCES service_categories(category_id),
+      title TEXT NOT NULL,
+      description TEXT NOT NULL,
+      budget_min REAL,
+      budget_max REAL,
+      deadline TEXT,
+      status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open','in_progress','completed','cancelled')),
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS service_request_applications (
+      application_id TEXT PRIMARY KEY,
+      request_id TEXT NOT NULL REFERENCES service_requests(request_id),
+      freelancer_id TEXT NOT NULL REFERENCES users(user_id),
+      cover_message TEXT NOT NULL,
+      proposed_price REAL NOT NULL,
+      proposed_timeline TEXT,
+      status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','accepted','declined')),
+      created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS service_orders (
+      order_id TEXT PRIMARY KEY,
+      gig_id TEXT REFERENCES service_gigs(gig_id),
+      request_id TEXT REFERENCES service_requests(request_id),
+      buyer_id TEXT NOT NULL REFERENCES users(user_id),
+      freelancer_id TEXT NOT NULL REFERENCES users(user_id),
+      agreed_price REAL NOT NULL,
+      platform_commission REAL NOT NULL,
+      freelancer_earnings REAL NOT NULL,
+      description TEXT,
+      status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','in_progress','delivered','completed','cancelled','disputed')),
+      escrow_status TEXT NOT NULL DEFAULT 'held' CHECK(escrow_status IN ('held','released','refunded')),
+      buyer_confirmed INTEGER NOT NULL DEFAULT 0,
+      freelancer_confirmed INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      delivered_at TEXT,
+      completed_at TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS service_messages (
+      message_id TEXT PRIMARY KEY,
+      sender_id TEXT NOT NULL REFERENCES users(user_id),
+      receiver_id TEXT NOT NULL REFERENCES users(user_id),
+      gig_id TEXT REFERENCES service_gigs(gig_id),
+      request_id TEXT REFERENCES service_requests(request_id),
+      order_id TEXT REFERENCES service_orders(order_id),
+      message_text TEXT NOT NULL,
+      sent_at TEXT NOT NULL,
+      is_read INTEGER NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS service_reviews (
+      review_id TEXT PRIMARY KEY,
+      order_id TEXT NOT NULL REFERENCES service_orders(order_id),
+      reviewer_id TEXT NOT NULL REFERENCES users(user_id),
+      reviewee_id TEXT NOT NULL REFERENCES users(user_id),
+      star_rating INTEGER NOT NULL CHECK(star_rating BETWEEN 1 AND 5),
+      review_text TEXT,
+      is_flagged INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL
+    );
   `);
 }
 
@@ -167,12 +271,33 @@ function seedDatabase() {
     insertSkill.run(id, skill.name, skill.category, now);
   }
 
+  // ---- SERVICE CATEGORIES ----
+  const serviceCategories = [
+    { name: 'Web & App Development', description: 'Websites, web apps, mobile apps, APIs' },
+    { name: 'Graphic Design & Branding', description: 'Logos, flyers, social media graphics, brand identity' },
+    { name: 'Video Editing & Motion Graphics', description: 'Video editing, animations, intros, reels' },
+    { name: 'Data Analysis & Visualization', description: 'Excel, Power BI, data cleaning, dashboards' },
+    { name: 'Academic Writing & Research', description: 'Research assistance, thesis formatting, citations' },
+    { name: 'Photography & Photo Editing', description: 'Photo shoots, retouching, color grading' },
+    { name: 'Social Media Management', description: 'Content creation, scheduling, analytics' },
+    { name: 'Cybersecurity Services', description: 'Security audits, vulnerability assessments' },
+    { name: 'Database & Backend Services', description: 'Database design, API development, server setup' },
+  ];
+
+  const insertCategory = db.prepare('INSERT INTO service_categories (category_id, category_name, description, is_active, created_at) VALUES (?, ?, ?, 1, ?)');
+  const categoryIds = {};
+  for (const cat of serviceCategories) {
+    const id = uuidv4();
+    categoryIds[cat.name] = id;
+    insertCategory.run(id, cat.name, cat.description, now);
+  }
+
   // ---- ADMIN ----
   const adminId = uuidv4();
-  db.prepare(`INSERT INTO users (user_id, full_name, email, password_hash, role, institution, programme, bio, wallet_balance, earnings_balance, is_verified, is_active, is_admin, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
+  db.prepare(`INSERT INTO users (user_id, full_name, email, password_hash, role, is_student, institution, programme, bio, wallet_balance, earnings_balance, is_verified, is_active, is_admin, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(
     adminId, 'Platform Admin', 'admin@skillbridge.gh', hashPassword('admin123'),
-    'student', 'SkillBridge HQ', 'Administration', 'Platform administrator', 0, 0, 1, 1, 1, now
+    'student', 1, 'SkillBridge HQ', 'Administration', 'Platform administrator', 0, 0, 1, 1, 1, now
   );
 
   // ---- TUTORS ----
@@ -191,8 +316,8 @@ function seedDatabase() {
     { name: 'Isaac Quaye', email: 'isaac@gimpa.edu.gh', institution: 'GIMPA', programme: 'Information Technology', year: 3, skill: 'Cybersecurity Fundamentals', rate: 85, bio: 'Cybersecurity specialist and data analyst. I teach network security, ethical hacking, and also advanced data analysis with Excel, Power BI, and Python.', sessions: 31, photo: null, extraSkills: ['Data Analysis (Microsoft Excel, Power BI, Google Sheets)', 'Python Programming'] },
   ];
 
-  const insertUser = db.prepare(`INSERT INTO users (user_id, full_name, email, password_hash, role, institution, programme, year_of_study, bio, profile_photo_url, wallet_balance, earnings_balance, is_verified, is_active, is_admin, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+  const insertUser = db.prepare(`INSERT INTO users (user_id, full_name, email, password_hash, role, is_student, institution, programme, year_of_study, bio, profile_photo_url, wallet_balance, earnings_balance, is_verified, is_active, is_admin, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
   const insertListing = db.prepare(`INSERT INTO session_listings (listing_id, tutor_id, skill_id, title, description, hourly_rate, delivery_format, status, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
   const insertAvailability = db.prepare(`INSERT INTO availability (availability_id, tutor_id, day_of_week, start_time, end_time, is_booked)
@@ -206,7 +331,7 @@ function seedDatabase() {
     const tutorId = uuidv4();
     tutorIds.push(tutorId);
     const earnings = tutor.rate * tutor.sessions * 0.9;
-    insertUser.run(tutorId, tutor.name, tutor.email, hashPassword('password123'), 'tutor', tutor.institution, tutor.programme, tutor.year, tutor.bio, tutor.photo, 0, Math.round(earnings * 0.1), 1, 1, 0, now);
+    insertUser.run(tutorId, tutor.name, tutor.email, hashPassword('password123'), 'tutor', 1, tutor.institution, tutor.programme, tutor.year, tutor.bio, tutor.photo, 0, Math.round(earnings * 0.1), 1, 1, 0, now);
 
     // Primary listing
     const listingId = uuidv4();
@@ -249,7 +374,7 @@ function seedDatabase() {
   for (const student of students) {
     const studentId = uuidv4();
     studentIds.push(studentId);
-    insertUser.run(studentId, student.name, student.email, hashPassword('password123'), 'student', student.institution, student.programme, student.year, null, null, student.wallet, 0, 1, 1, 0, now);
+    insertUser.run(studentId, student.name, student.email, hashPassword('password123'), 'student', 1, student.institution, student.programme, student.year, null, null, student.wallet, 0, 1, 1, 0, now);
   }
 
   // ---- SAMPLE BOOKINGS & REVIEWS ----
@@ -338,6 +463,37 @@ function seedDatabase() {
     VALUES (?, ?, ?, ?, ?, ?)`).run(uuidv4(), studentIds[0], 'Machine Learning with Python', 'I need help with ML algorithms and scikit-learn', 'pending', now);
   db.prepare(`INSERT INTO skill_requests (request_id, student_id, skill_name, description, status, submitted_at)
     VALUES (?, ?, ?, ?, ?, ?)`).run(uuidv4(), studentIds[1], 'Cloud Computing (AWS)', 'Want to learn AWS basics for my project', 'pending', now);
+
+  // ---- SAMPLE SERVICE GIGS ----
+  const insertGig = db.prepare(`INSERT INTO service_gigs (gig_id, freelancer_id, category_id, title, description, min_price, max_price, delivery_time, delivery_format, status, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)`);
+
+  const sampleGigs = [
+    { tutorIdx: 2, cat: 'Web & App Development', title: 'Build a responsive portfolio website', desc: 'I will build you a modern, responsive portfolio website using React, HTML, CSS, and JavaScript. Includes mobile optimization and SEO basics.', min: 200, max: 500, time: '3-5 days', format: 'remote' },
+    { tutorIdx: 1, cat: 'Graphic Design & Branding', title: 'Design your event flyer or poster', desc: 'Professional event flyer, poster, or social media graphic designed in Canva or Figma. Includes 2 revisions.', min: 30, max: 80, time: '1-2 days', format: 'remote' },
+    { tutorIdx: 5, cat: 'Photography & Photo Editing', title: 'Professional photo retouching & color grading', desc: 'I will retouch and color grade your photos using Adobe Lightroom and Photoshop. Perfect for portraits, events, and product shots.', min: 20, max: 60, time: '1-2 days', format: 'remote' },
+    { tutorIdx: 6, cat: 'Web & App Development', title: 'Build a cross-platform mobile app', desc: 'I will develop a mobile app for your business or project using React Native. Includes both iOS and Android builds.', min: 500, max: 1500, time: '1-3 weeks', format: 'remote' },
+    { tutorIdx: 3, cat: 'Data Analysis & Visualization', title: 'Create a Power BI dashboard for your data', desc: 'I will create interactive Power BI dashboards from your data. Includes data cleaning, modeling, and visual design.', min: 100, max: 300, time: '2-4 days', format: 'remote' },
+    { tutorIdx: 7, cat: 'Database & Backend Services', title: 'Design and build your database', desc: 'Complete database design and implementation in MySQL, PostgreSQL, or SQLite. Includes schema design, normalization, and sample queries.', min: 150, max: 400, time: '2-5 days', format: 'remote' },
+  ];
+
+  for (const gig of sampleGigs) {
+    insertGig.run(uuidv4(), tutorIds[gig.tutorIdx], categoryIds[gig.cat], gig.title, gig.desc, gig.min, gig.max, gig.time, gig.format, now, now);
+  }
+
+  // ---- SAMPLE SERVICE REQUESTS (buyer ads) ----
+  const insertServiceRequest = db.prepare(`INSERT INTO service_requests (request_id, buyer_id, category_id, title, description, budget_min, budget_max, deadline, status, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)`);
+
+  const sampleRequests = [
+    { studentIdx: 0, cat: 'Web & App Development', title: 'Need a website for my small business', desc: 'Looking for someone to build a simple e-commerce website for my clothing business. Should have product listings, cart, and mobile money payment integration.', min: 300, max: 800, deadline: '2026-04-15' },
+    { studentIdx: 1, cat: 'Video Editing & Motion Graphics', title: 'Edit my YouTube video (10 minutes)', desc: 'I have raw footage for a 10-minute YouTube video. Need professional editing with transitions, text overlays, and background music.', min: 50, max: 150, deadline: '2026-03-25' },
+    { studentIdx: 2, cat: 'Graphic Design & Branding', title: 'Logo and brand identity for my startup', desc: 'Need a complete brand identity package: logo, color palette, typography, and business card design for my tech startup.', min: 100, max: 250, deadline: '2026-04-01' },
+  ];
+
+  for (const req of sampleRequests) {
+    insertServiceRequest.run(uuidv4(), studentIds[req.studentIdx], categoryIds[req.cat], req.title, req.desc, req.min, req.max, req.deadline, now, now);
+  }
 
   console.log('Database seeded successfully!');
 }

@@ -45,6 +45,15 @@ router.get('/dashboard', authenticateToken, requireAdmin, (req, res) => {
       ORDER BY month ASC
     `).all();
 
+    // Service Marketplace stats
+    const totalGigs = db.prepare("SELECT COUNT(*) as count FROM service_gigs WHERE status = 'active'").get();
+    const totalServiceRequests = db.prepare("SELECT COUNT(*) as count FROM service_requests WHERE status = 'open'").get();
+    const totalServiceOrders = db.prepare("SELECT COUNT(*) as count FROM service_orders").get();
+    const completedServiceOrders = db.prepare("SELECT COUNT(*) as count FROM service_orders WHERE status = 'completed'").get();
+    const serviceRevenue = db.prepare("SELECT COALESCE(SUM(agreed_price), 0) as total FROM service_orders WHERE status = 'completed'").get();
+    const serviceCommission = db.prepare("SELECT COALESCE(SUM(platform_commission), 0) as total FROM service_orders WHERE status = 'completed'").get();
+    const pendingCategoryRequests = db.prepare("SELECT COUNT(*) as count FROM service_category_requests WHERE status = 'pending'").get();
+
     res.json({
       stats: {
         total_users: totalUsers.count,
@@ -54,6 +63,15 @@ router.get('/dashboard', authenticateToken, requireAdmin, (req, res) => {
         total_revenue: totalRevenue.total,
         commission_earned: commissionEarned.total,
         pending_bookings: pendingBookings.count,
+      },
+      marketplace_stats: {
+        active_gigs: totalGigs.count,
+        open_requests: totalServiceRequests.count,
+        total_service_orders: totalServiceOrders.count,
+        completed_service_orders: completedServiceOrders.count,
+        service_revenue: serviceRevenue.total,
+        service_commission: serviceCommission.total,
+        pending_category_requests: pendingCategoryRequests.count,
       },
       top_tutors: topTutors,
       recent_transactions: recentTransactions,
@@ -257,6 +275,73 @@ router.get('/partners', authenticateToken, requireAdmin, (req, res) => {
     res.json(partners);
   } catch (err) {
     res.status(500).json({ error: 'Failed to get partners' });
+  }
+});
+
+// GET /api/admin/service-categories/requests - Get pending category requests
+router.get('/service-categories/requests', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    const requests = db.prepare(`
+      SELECT scr.*, u.full_name as user_name, u.email
+      FROM service_category_requests scr
+      JOIN users u ON scr.user_id = u.user_id
+      ORDER BY scr.submitted_at DESC
+    `).all();
+    res.json(requests);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to get category requests' });
+  }
+});
+
+// PUT /api/admin/service-categories/requests/:id - Approve/decline category request
+router.put('/service-categories/requests/:id', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    const { status } = req.body; // 'approved' or 'declined'
+    if (!['approved', 'declined'].includes(status)) {
+      return res.status(400).json({ error: 'Status must be approved or declined' });
+    }
+
+    const request = db.prepare('SELECT * FROM service_category_requests WHERE request_id = ?').get(req.params.id);
+    if (!request) return res.status(404).json({ error: 'Request not found' });
+
+    const now = new Date().toISOString();
+    db.prepare('UPDATE service_category_requests SET status = ?, reviewed_by = ?, reviewed_at = ? WHERE request_id = ?').run(status, req.user.user_id, now, req.params.id);
+
+    // If approved, create the category
+    if (status === 'approved') {
+      const { v4: uuidv4 } = require('uuid');
+      db.prepare('INSERT INTO service_categories (category_id, category_name, description, is_active, created_at) VALUES (?, ?, ?, 1, ?)').run(
+        uuidv4(), request.category_name, request.description, now
+      );
+    }
+
+    res.json({ message: `Category request ${status}` });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update category request' });
+  }
+});
+
+// GET /api/admin/service-orders - Get all service orders
+router.get('/service-orders', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    const { status } = req.query;
+    let query = `
+      SELECT so.*, buyer.full_name as buyer_name, freelancer.full_name as freelancer_name,
+        g.title as gig_title, sr.title as request_title
+      FROM service_orders so
+      JOIN users buyer ON so.buyer_id = buyer.user_id
+      JOIN users freelancer ON so.freelancer_id = freelancer.user_id
+      LEFT JOIN service_gigs g ON so.gig_id = g.gig_id
+      LEFT JOIN service_requests sr ON so.request_id = sr.request_id
+    `;
+    const params = [];
+    if (status) { query += ' WHERE so.status = ?'; params.push(status); }
+    query += ' ORDER BY so.created_at DESC';
+
+    const orders = db.prepare(query).all(...params);
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to get service orders' });
   }
 });
 

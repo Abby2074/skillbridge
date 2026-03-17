@@ -40,4 +40,11 @@ function optionalAuth(req, res, next) {
   next();
 }
 
-module.exports = { authenticateToken, requireAdmin, optionalAuth, JWT_SECRET };
+function requireStudent(req, res, next) {
+  if (!req.user || !req.user.is_student) {
+    return res.status(403).json({ error: 'Only verified students can perform this action' });
+  }
+  next();
+}
+
+module.exports = { authenticateToken, requireAdmin, requireStudent, optionalAuth, JWT_SECRET };

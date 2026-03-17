@@ -65,7 +65,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout, refreshUser, isAuthenticated: !!token, isAdmin: user?.is_admin === 1, isTutor: user?.role === 'tutor' || user?.role === 'both', isStudent: user?.role === 'student' || user?.role === 'both' }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout, refreshUser, isAuthenticated: !!token, isAdmin: user?.is_admin === 1, isTutor: user?.role === 'tutor' || user?.role === 'both', isStudent: user?.role === 'student' || user?.role === 'both', isVerifiedStudent: user?.is_student === 1, isBuyer: user?.role === 'buyer' || user?.role === 'student' || user?.role === 'both', canFreelance: user?.is_student === 1 }}>
       {children}
     </AuthContext.Provider>
   );

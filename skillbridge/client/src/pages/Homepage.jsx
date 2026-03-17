@@ -203,6 +203,26 @@ export default function Homepage() {
         </div>
       </section>
 
+      {/* Service Marketplace CTA */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="bg-gradient-to-r from-sidebar to-primary rounded-2xl p-8 lg:p-12 text-white">
+          <div className="max-w-2xl">
+            <h2 className="font-display font-bold text-3xl">Need a Project Done?</h2>
+            <p className="text-white/80 mt-3 text-lg">
+              Beyond tutoring, our student freelancers can build your website, design your logo, edit your videos, and more. Hire talented students at affordable rates.
+            </p>
+            <div className="flex flex-wrap gap-4 mt-6">
+              <Link to="/marketplace" className="btn-accent inline-flex items-center gap-2">
+                Browse Services <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link to="/service-requests" className="bg-white/10 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-white/20 transition-colors">
+                Post a Request
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* How it Works */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-orange-soft via-white to-red-50/30" />

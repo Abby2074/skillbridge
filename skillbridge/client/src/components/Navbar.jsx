@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Menu, X, ChevronDown, User, LogOut, LayoutDashboard, Wallet, BookOpen, Shield } from 'lucide-react';
+import { Menu, X, ChevronDown, User, LogOut, LayoutDashboard, Wallet, BookOpen, Shield, Briefcase } from 'lucide-react';
 
 export default function Navbar() {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
@@ -29,6 +29,7 @@ export default function Navbar() {
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6">
             <Link to="/browse" className="text-text-muted hover:text-red-brand font-medium transition-colors">Browse <span className="text-red-brand">Tutors</span></Link>
+            <Link to="/marketplace" className="text-text-muted hover:text-red-brand font-medium transition-colors">Marketplace</Link>
             {isAuthenticated ? (
               <div className="relative">
                 <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center gap-2 text-text-main hover:text-primary font-medium transition-colors">
@@ -84,6 +85,7 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="md:hidden bg-white border-t border-border px-4 pb-4">
           <Link to="/browse" onClick={() => setMobileOpen(false)} className="block py-3 text-text-muted hover:text-red-brand font-medium">Browse Tutors</Link>
+          <Link to="/marketplace" onClick={() => setMobileOpen(false)} className="block py-3 text-text-muted hover:text-red-brand font-medium">Marketplace</Link>
           {isAuthenticated ? (
             <>
               <Link to="/dashboard" onClick={() => setMobileOpen(false)} className="block py-3 text-text-muted hover:text-primary font-medium">Dashboard</Link>

@@ -25,6 +25,12 @@ app.use('/api/wallet', require('./routes/wallet'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/invoices', require('./routes/invoices'));
 
+// Service Marketplace Routes
+app.use('/api/gigs', require('./routes/gigs'));
+app.use('/api/service-requests', require('./routes/service-requests'));
+app.use('/api/service-orders', require('./routes/service-orders'));
+app.use('/api/service-messages', require('./routes/service-messages'));
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'SkillBridge API is running' });

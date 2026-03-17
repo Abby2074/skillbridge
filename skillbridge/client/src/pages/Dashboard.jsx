@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, Outlet, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { usersAPI, bookingsAPI, listingsAPI, availabilityAPI, reviewsAPI, skillsAPI, invoicesAPI } from '../api';
+import { usersAPI, bookingsAPI, listingsAPI, availabilityAPI, reviewsAPI, skillsAPI, invoicesAPI, gigsAPI, serviceOrdersAPI, serviceMessagesAPI, serviceRequestsAPI } from '../api';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import WalletCard from '../components/WalletCard';
@@ -16,13 +16,14 @@ import { format } from 'date-fns';
 import {
   LayoutDashboard, BookOpen, Calendar, Wallet, User, Star, Clock,
   PlusCircle, Edit2, Pause, Play, Trash2, ArrowRight, FileText,
-  DollarSign, TrendingUp, Users, Send, Download
+  DollarSign, TrendingUp, Users, Send, Download, Briefcase, Megaphone,
+  MessageSquare, Package, Check, X as XIcon
 } from 'lucide-react';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export default function Dashboard() {
-  const { user, isTutor, isStudent, refreshUser } = useAuth();
+  const { user, isTutor, isStudent, canFreelance, refreshUser } = useAuth();
   const { addToast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
@@ -62,6 +63,28 @@ export default function Dashboard() {
   const { data: skills } = useQuery({
     queryKey: ['skills'],
     queryFn: () => skillsAPI.getAll().then(r => r.data),
+  });
+
+  // Service Marketplace queries
+  const { data: myGigs } = useQuery({
+    queryKey: ['my-gigs'],
+    queryFn: () => gigsAPI.getMy().then(r => r.data),
+    enabled: canFreelance,
+  });
+
+  const { data: serviceCategories } = useQuery({
+    queryKey: ['service-categories'],
+    queryFn: () => gigsAPI.getCategories().then(r => r.data),
+  });
+
+  const { data: serviceOrders } = useQuery({
+    queryKey: ['service-orders'],
+    queryFn: () => serviceOrdersAPI.getAll().then(r => r.data),
+  });
+
+  const { data: myServiceRequests } = useQuery({
+    queryKey: ['my-service-requests'],
+    queryFn: () => serviceRequestsAPI.getMy().then(r => r.data),
   });
 
   // Mutations
@@ -128,6 +151,46 @@ export default function Dashboard() {
     onSuccess: () => { addToast('Message sent!'); setMessageModal(null); setMessageText(''); queryClient.invalidateQueries(['bookings']); },
   });
 
+  // Service gig mutations
+  const [gigModal, setGigModal] = useState(null);
+  const [gigForm, setGigForm] = useState({ category_id: '', title: '', description: '', min_price: '', max_price: '', delivery_time: '', delivery_format: 'remote' });
+
+  const createGig = useMutation({
+    mutationFn: (data) => gigsAPI.create(data),
+    onSuccess: () => { addToast('Gig created!'); setGigModal(null); queryClient.invalidateQueries(['my-gigs']); },
+    onError: (err) => addToast(err.response?.data?.error || 'Failed to create gig', 'error'),
+  });
+
+  const updateGig = useMutation({
+    mutationFn: ({ id, data }) => gigsAPI.update(id, data),
+    onSuccess: () => { addToast('Gig updated!'); setGigModal(null); queryClient.invalidateQueries(['my-gigs']); },
+    onError: () => addToast('Failed to update gig', 'error'),
+  });
+
+  const deleteGig = useMutation({
+    mutationFn: (id) => gigsAPI.delete(id),
+    onSuccess: () => { addToast('Gig archived.'); queryClient.invalidateQueries(['my-gigs']); },
+  });
+
+  // Service order mutations
+  const deliverOrder = useMutation({
+    mutationFn: (id) => serviceOrdersAPI.deliver(id),
+    onSuccess: () => { addToast('Marked as delivered!'); queryClient.invalidateQueries(['service-orders']); },
+    onError: (err) => addToast(err.response?.data?.error || 'Failed', 'error'),
+  });
+
+  const confirmOrder = useMutation({
+    mutationFn: (id) => serviceOrdersAPI.confirm(id),
+    onSuccess: () => { addToast('Order completed! Payment released.'); refreshUser(); queryClient.invalidateQueries(['service-orders']); },
+    onError: (err) => addToast(err.response?.data?.error || 'Failed', 'error'),
+  });
+
+  const cancelOrder = useMutation({
+    mutationFn: (id) => serviceOrdersAPI.cancel(id),
+    onSuccess: () => { addToast('Order cancelled, buyer refunded.'); refreshUser(); queryClient.invalidateQueries(['service-orders']); },
+    onError: (err) => addToast(err.response?.data?.error || 'Failed', 'error'),
+  });
+
   const downloadInvoice = async (bookingId) => {
     try {
       const response = await invoicesAPI.download(bookingId);
@@ -154,6 +217,10 @@ export default function Dashboard() {
       { path: '/availability', label: 'Availability', icon: Clock },
       { path: '/earnings', label: 'Earnings', icon: DollarSign },
     ] : []),
+    // Service Marketplace tabs
+    ...(canFreelance ? [{ path: '/my-gigs', label: 'My Gigs', icon: Briefcase }] : []),
+    { path: '/service-orders', label: 'Service Orders', icon: Package },
+    { path: '/my-requests', label: 'My Requests', icon: Megaphone },
     { path: '/wallet', label: 'Wallet', icon: Wallet },
     { path: '/profile', label: 'Profile', icon: User },
   ];
@@ -392,6 +459,133 @@ export default function Dashboard() {
             </div>
           )}
 
+          {/* My Gigs Tab (Freelancers) */}
+          {path === '/my-gigs' && canFreelance && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h1 className="font-display font-bold text-2xl">My Service Gigs</h1>
+                <button onClick={() => { setGigModal('new'); setGigForm({ category_id: '', title: '', description: '', min_price: '', max_price: '', delivery_time: '', delivery_format: 'remote' }); }} className="btn-primary text-sm flex items-center gap-1">
+                  <PlusCircle className="h-4 w-4" /> New Gig
+                </button>
+              </div>
+              {myGigs?.length === 0 ? (
+                <EmptyState title="No gigs yet" message="Create your first service gig to start earning from projects." icon={Briefcase} />
+              ) : (
+                myGigs?.map(g => (
+                  <div key={g.gig_id} className="card flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold">{g.title}</h3>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${g.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{g.status}</span>
+                      </div>
+                      <p className="text-text-muted text-sm mt-1">{g.category_name} | GHS {Number(g.min_price).toFixed(0)} - {Number(g.max_price).toFixed(0)} | {g.completed_orders || 0} orders</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => { setGigModal(g.gig_id); setGigForm({ category_id: g.category_id, title: g.title, description: g.description, min_price: g.min_price, max_price: g.max_price, delivery_time: g.delivery_time || '', delivery_format: g.delivery_format }); }} className="p-2 hover:bg-gray-100 rounded-lg"><Edit2 className="h-4 w-4" /></button>
+                      <button onClick={() => updateGig.mutate({ id: g.gig_id, data: { status: g.status === 'active' ? 'paused' : 'active' } })} className="p-2 hover:bg-gray-100 rounded-lg">
+                        {g.status === 'active' ? <Pause className="h-4 w-4 text-warning" /> : <Play className="h-4 w-4 text-success" />}
+                      </button>
+                      <button onClick={() => deleteGig.mutate(g.gig_id)} className="p-2 hover:bg-gray-100 rounded-lg"><Trash2 className="h-4 w-4 text-danger" /></button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* Service Orders Tab */}
+          {path === '/service-orders' && (
+            <div className="space-y-4">
+              <h1 className="font-display font-bold text-2xl">Service Orders</h1>
+              {serviceOrders?.length === 0 ? (
+                <EmptyState title="No service orders" message="Browse the marketplace to order services or post gigs to receive orders." icon={Package} />
+              ) : (
+                serviceOrders?.map(o => (
+                  <div key={o.order_id} className="card">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold">{o.gig_title || o.request_title || 'Service Order'}</h3>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            o.status === 'completed' ? 'bg-green-100 text-green-700' :
+                            o.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                            o.status === 'delivered' ? 'bg-purple-100 text-purple-700' :
+                            o.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>{o.status.replace('_', ' ')}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            o.escrow_status === 'held' ? 'bg-yellow-100 text-yellow-700' :
+                            o.escrow_status === 'released' ? 'bg-green-100 text-green-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>Escrow: {o.escrow_status}</span>
+                        </div>
+                        <p className="text-text-muted text-sm mt-1">
+                          {o.buyer_id === user?.user_id ? `Freelancer: ${o.freelancer_name}` : `Buyer: ${o.buyer_name}`}
+                          <span className="mx-1">|</span>
+                          {o.gig_category || o.request_category || 'Service'}
+                        </p>
+                        <p className="text-accent font-semibold text-sm mt-1">GHS {Number(o.agreed_price).toFixed(2)}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {/* Freelancer: mark as delivered */}
+                        {o.freelancer_id === user?.user_id && o.status === 'in_progress' && (
+                          <button onClick={() => deliverOrder.mutate(o.order_id)} className="bg-purple-600 text-white text-xs py-1.5 px-3 rounded-lg hover:bg-purple-700">Mark Delivered</button>
+                        )}
+                        {/* Buyer: confirm completion */}
+                        {o.buyer_id === user?.user_id && o.status === 'delivered' && (
+                          <button onClick={() => confirmOrder.mutate(o.order_id)} className="bg-success text-white text-xs py-1.5 px-3 rounded-lg">Confirm & Pay</button>
+                        )}
+                        {/* Cancel */}
+                        {['pending', 'in_progress'].includes(o.status) && (
+                          <button onClick={() => cancelOrder.mutate(o.order_id)} className="text-danger text-xs py-1.5 px-3 border border-danger rounded-lg hover:bg-red-50">Cancel</button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* My Requests Tab */}
+          {path === '/my-requests' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h1 className="font-display font-bold text-2xl">My Service Requests</h1>
+                <Link to="/post-request" className="btn-primary text-sm flex items-center gap-1">
+                  <PlusCircle className="h-4 w-4" /> Post Request
+                </Link>
+              </div>
+              {myServiceRequests?.length === 0 ? (
+                <EmptyState title="No requests yet" message="Post a service request to find freelancers for your projects." icon={Megaphone} />
+              ) : (
+                myServiceRequests?.map(r => (
+                  <Link key={r.request_id} to={`/service-request/${r.request_id}`} className="card block hover:shadow-md transition-shadow">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold">{r.title}</h3>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            r.status === 'open' ? 'bg-green-100 text-green-700' :
+                            r.status === 'in_progress' ? 'bg-blue-100 text-blue-700' :
+                            r.status === 'completed' ? 'bg-gray-100 text-gray-700' :
+                            'bg-red-100 text-red-700'
+                          }`}>{r.status}</span>
+                        </div>
+                        <p className="text-text-muted text-sm mt-1">
+                          {r.category_name || 'Uncategorized'}
+                          {r.budget_max && <span> | Budget: GHS {Number(r.budget_min || 0).toFixed(0)} - {Number(r.budget_max).toFixed(0)}</span>}
+                          <span> | {r.application_count || 0} applications</span>
+                        </p>
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-text-muted" />
+                    </div>
+                  </Link>
+                ))
+              )}
+            </div>
+          )}
+
           {/* Profile Tab */}
           {path === '/profile' && <ProfileForm />}
 
@@ -470,6 +664,61 @@ export default function Dashboard() {
           <p className="text-sm text-text-muted">Regarding: {messageModal?.title}</p>
           <textarea value={messageText} onChange={e => setMessageText(e.target.value)} className="input-field" rows={3} placeholder="Type your message..." />
           <button onClick={() => sendMessage.mutate({ bookingId: messageModal?.booking_id, text: messageText })} disabled={!messageText.trim()} className="btn-primary w-full">Send</button>
+        </div>
+      </Modal>
+
+      {/* Gig Modal */}
+      <Modal isOpen={!!gigModal} onClose={() => setGigModal(null)} title={gigModal === 'new' ? 'Create Service Gig' : 'Edit Gig'}>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Category</label>
+            <select value={gigForm.category_id} onChange={e => setGigForm(p => ({ ...p, category_id: e.target.value }))} className="input-field">
+              <option value="">Select category</option>
+              {serviceCategories?.map(c => <option key={c.category_id} value={c.category_id}>{c.category_name}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Title</label>
+            <input type="text" value={gigForm.title} onChange={e => setGigForm(p => ({ ...p, title: e.target.value }))} className="input-field" placeholder="e.g. Build a responsive website" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Description</label>
+            <textarea value={gigForm.description} onChange={e => setGigForm(p => ({ ...p, description: e.target.value }))} className="input-field" rows={3} placeholder="Describe what you offer..." />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Min Price (GHS)</label>
+              <input type="number" value={gigForm.min_price} onChange={e => setGigForm(p => ({ ...p, min_price: e.target.value }))} className="input-field" min="1" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Max Price (GHS)</label>
+              <input type="number" value={gigForm.max_price} onChange={e => setGigForm(p => ({ ...p, max_price: e.target.value }))} className="input-field" min="1" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Delivery Time</label>
+              <input type="text" value={gigForm.delivery_time} onChange={e => setGigForm(p => ({ ...p, delivery_time: e.target.value }))} className="input-field" placeholder="e.g. 3-5 days" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Format</label>
+              <select value={gigForm.delivery_format} onChange={e => setGigForm(p => ({ ...p, delivery_format: e.target.value }))} className="input-field">
+                <option value="remote">Remote</option>
+                <option value="in_person">In-Person</option>
+                <option value="both">Both</option>
+              </select>
+            </div>
+          </div>
+          <button
+            onClick={() => {
+              const data = { ...gigForm, min_price: parseFloat(gigForm.min_price), max_price: parseFloat(gigForm.max_price) };
+              if (gigModal === 'new') createGig.mutate(data);
+              else updateGig.mutate({ id: gigModal, data });
+            }}
+            className="btn-primary w-full"
+          >
+            {gigModal === 'new' ? 'Create Gig' : 'Update Gig'}
+          </button>
         </div>
       </Modal>
     </div>

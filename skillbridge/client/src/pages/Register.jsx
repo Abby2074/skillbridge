@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../components/Toast';
 import { skillsAPI } from '../api';
-import { BookOpen, User, GraduationCap, Briefcase, ArrowRight, ArrowLeft, Check, AlertTriangle, CreditCard } from 'lucide-react';
+import { BookOpen, User, GraduationCap, Briefcase, ArrowRight, ArrowLeft, Check, AlertTriangle, CreditCard, ShoppingCart } from 'lucide-react';
 
 export default function Register() {
   const [step, setStep] = useState(1);
@@ -55,7 +55,7 @@ export default function Register() {
         setShowPayment(true);
         return;
       }
-      if (formData.role === 'student') {
+      if (formData.role === 'student' || formData.role === 'buyer') {
         handleSubmit();
       } else {
         setStep(3);
@@ -71,7 +71,7 @@ export default function Register() {
     setShowPayment(false);
 
     const paymentRef = `ACCESS-${Date.now()}`;
-    if (formData.role === 'student') {
+    if (formData.role === 'student' || formData.role === 'buyer') {
       handleSubmit(paymentRef);
     } else {
       // Store the payment reference and move to step 3
@@ -104,6 +104,7 @@ export default function Register() {
     { value: 'student', icon: GraduationCap, title: 'Student', desc: 'I want to book tutoring sessions and learn new skills' },
     { value: 'tutor', icon: Briefcase, title: 'Tutor', desc: 'I want to teach my skills and earn money' },
     { value: 'both', icon: User, title: 'Both', desc: 'I want to learn and teach on the platform' },
+    { value: 'buyer', icon: ShoppingCart, title: 'Buyer', desc: 'I want to hire freelancers for projects (no university email needed)' },
   ];
 
   return (
@@ -320,9 +321,9 @@ export default function Register() {
                   <ArrowLeft className="h-4 w-4" /> Back
                 </button>
               ) : <div />}
-              {step < 3 || formData.role === 'student' ? (
+              {step < 3 || formData.role === 'student' || formData.role === 'buyer' ? (
                 <button onClick={handleNext} className="bg-gradient-to-r from-red-brand to-orange-brand text-white px-6 py-2.5 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-1">
-                  {step === 2 && formData.role === 'student' ? 'Create Account' : 'Next'} <ArrowRight className="h-4 w-4" />
+                  {step === 2 && (formData.role === 'student' || formData.role === 'buyer') ? 'Create Account' : 'Next'} <ArrowRight className="h-4 w-4" />
                 </button>
               ) : (
                 <button onClick={() => handleSubmit()} className="bg-gradient-to-r from-red-brand to-orange-brand text-white px-6 py-2.5 rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-1">
