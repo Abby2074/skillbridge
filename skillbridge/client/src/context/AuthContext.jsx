@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { authAPI } from '../api';
 
 const AuthContext = createContext(null);
@@ -7,28 +7,27 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('sb_token'));
   const [loading, setLoading] = useState(true);
+  const hasInitialized = useRef(false);
 
-  const fetchUser = useCallback(async () => {
+  // Only fetch user on initial mount (page refresh), not after login/register
+  useEffect(() => {
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
     if (!token) {
       setLoading(false);
       return;
     }
-    try {
-      const { data } = await authAPI.getMe();
-      setUser(data);
-    } catch {
-      localStorage.removeItem('sb_token');
-      localStorage.removeItem('sb_user');
-      setToken(null);
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    fetchUser();
-  }, [fetchUser]);
+    authAPI.getMe()
+      .then(({ data }) => setUser(data))
+      .catch(() => {
+        localStorage.removeItem('sb_token');
+        localStorage.removeItem('sb_user');
+        setToken(null);
+        setUser(null);
+      })
+      .finally(() => setLoading(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const login = async (email, password) => {
     const { data } = await authAPI.login({ email, password });

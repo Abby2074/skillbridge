@@ -16,16 +16,14 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401/403 responses
+// Handle expired token responses (only hard-redirect on token expiry, not all 401/403)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      if (error.response.data?.error === 'Invalid or expired token') {
-        localStorage.removeItem('sb_token');
-        localStorage.removeItem('sb_user');
-        window.location.href = '/login';
-      }
+    if (error.response?.data?.error === 'Invalid or expired token') {
+      localStorage.removeItem('sb_token');
+      localStorage.removeItem('sb_user');
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }
