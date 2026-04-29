@@ -377,6 +377,18 @@ function seedDatabase() {
     insertUser.run(studentId, student.name, student.email, hashPassword('password123'), 'student', 1, student.institution, student.programme, student.year, null, null, student.wallet, 0, 1, 1, 0, now);
   }
 
+  // ---- DEMO BUYERS (non-student external clients) ----
+  const buyers = [
+    { name: 'Sarah Mensah', email: 'sarah.client@demo.com', wallet: 500.00 },
+    { name: 'Daniel Owusu', email: 'daniel.client@demo.com', wallet: 350.00 },
+  ];
+  const buyerIds = [];
+  for (const buyer of buyers) {
+    const buyerId = uuidv4();
+    buyerIds.push(buyerId);
+    insertUser.run(buyerId, buyer.name, buyer.email, hashPassword('demo123'), 'buyer', 0, null, null, null, null, null, buyer.wallet, 0, 1, 1, 0, now);
+  }
+
   // ---- SAMPLE BOOKINGS & REVIEWS ----
   const insertBooking = db.prepare(`INSERT INTO bookings (booking_id, student_id, tutor_id, listing_id, availability_id, scheduled_date, delivery_format, learning_objectives, session_fee, platform_commission, tutor_earnings, status, online_link, requested_at, confirmed_at, completed_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
