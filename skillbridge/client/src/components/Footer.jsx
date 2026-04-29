@@ -37,7 +37,7 @@ export default function Footer() {
             <h4 className="font-display font-semibold mb-4">Contact</h4>
             <div className="space-y-3 text-gray-400 text-sm">
               <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-orange-light" /> support@skillbridge.gh</div>
-              <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-orange-light" /> +233 XX XXX XXXX</div>
+              <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-orange-light" /> +233 23 103 4668</div>
               <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-orange-light" /> Accra, Ghana</div>
             </div>
           </div>
