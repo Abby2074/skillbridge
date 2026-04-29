@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(wc -l /Users/abigail/Desktop/skillbridge-project/skillbridge/server/routes/*.js)",
+      "Bash(grep -n \"TODO\\\\|FIXME\\\\|BUG\\\\|HACK\" /Users/abigail/Desktop/skillbridge-project/skillbridge/server/routes/*.js /Users/abigail/Desktop/skillbridge-project/skillbridge/server/db.js /Users/abigail/Desktop/skillbridge-project/skillbridge/server/index.js)",
+      "Bash(npm run:*)",
+      "Bash(pkill -f \"node index.js\")",
+      "Bash(pkill -f \"vite\")",
+      "Bash(curl -s http://localhost:5000/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"admin@skillbridge.gh\",\"password\":\"admin123\"}')",
+      "Bash(curl -s http://localhost:5000/api/admin/crm/customers -H \"Authorization: Bearer $\\(curl -s http://localhost:5000/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"admin@skillbridge.gh\",\"password\":\"admin123\"}')",
+      "Bash(python3 -c 'import sys,json; d=json.load\\(sys.stdin\\); print\\(f\"Customers found: {len\\(d\\)}\"\\)')",
+      "Bash(rm -f /Users/abigail/Desktop/skillbridge-project/skillbridge/server/skillbridge.db)",
+      "Bash(python3 -c 'import sys,json; d=json.load\\(sys.stdin\\); print\\(f\"Total deliveries: {d[\\\\\"stats\\\\\"][\\\\\"total\\\\\"]}, Completed: {d[\\\\\"stats\\\\\"][\\\\\"completed\\\\\"]}, In Progress: {d[\\\\\"stats\\\\\"][\\\\\"in_progress\\\\\"]}\"\\)')",
+      "Bash(python3 -c ':*)",
+      "WebSearch",
+      "WebFetch(domain:parenting.firstcry.com)",
+      "WebFetch(domain:ghanacitizenship.com)",
+      "WebFetch(domain:www.theafricandream.net)",
+      "WebFetch(domain:www.momjunction.com)",
+      "WebFetch(domain:surnam.es)",
+      "WebFetch(domain:yen.com.gh)",
+      "WebFetch(domain:dagbonkingdom.com)",
+      "WebFetch(domain:www.ghanaweb.com)",
+      "Bash(curl -s http://localhost:5000/api/gigs)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'Gigs: {len\\(d\\)}'\\)\")",
+      "Bash(curl -v http://localhost:5000/api/gigs)",
+      "Bash(curl -s http://localhost:5000/api/users/tutors)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f'Tutors: {len\\(d\\)}'\\)\")"
+    ]
+  }
+}
