@@ -67,15 +67,15 @@ router.post('/register', authLimiter, [
     const user_id = uuidv4();
     const password_hash = bcrypt.hashSync(password, 10);
     const now = new Date().toISOString();
-    const accessFeePaid = isStudentEmail ? 0 : 1;
+    const accessFeePaid = (isStudentEmail || role === 'buyer') ? 0 : 1;
 
     db.prepare(`INSERT INTO users (user_id, full_name, email, password_hash, role, is_student, institution, programme, year_of_study, bio, wallet_balance, earnings_balance, is_verified, is_active, is_admin, account_type, access_fee_paid, created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 1, 1, 0, ?, ?, ?)`).run(
       user_id, full_name, email, password_hash, role, is_student, institution, programme || null, year_of_study || null, bio || null, accountType, accessFeePaid, now
     );
 
-    // Record access fee transaction for non-students
-    if (!isStudentEmail) {
+    // Record access fee transaction for non-students (skip for buyers)
+    if (!isStudentEmail && role !== 'buyer') {
       db.prepare(`INSERT INTO transactions (transaction_id, user_id, booking_id, transaction_type, amount, direction, status, payment_reference, created_at)
         VALUES (?, ?, NULL, 'access_fee', ?, 'debit', 'completed', ?, ?)`).run(
         uuidv4(), user_id, ACCESS_FEE, access_fee_reference, now
