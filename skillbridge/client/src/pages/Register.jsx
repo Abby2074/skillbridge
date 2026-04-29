@@ -41,7 +41,7 @@ export default function Register() {
     if (!formData.email.trim() || !/\S+@\S+\.\S+/.test(formData.email)) errs.email = 'Valid email is required';
     if (formData.password.length < 6) errs.password = 'Password must be at least 6 characters';
     if (formData.password !== formData.confirm_password) errs.confirm_password = 'Passwords do not match';
-    if (!formData.institution.trim()) errs.institution = 'Institution is required';
+    if (formData.role !== 'buyer' && !formData.institution.trim()) errs.institution = 'Institution is required';
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
