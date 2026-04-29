@@ -51,7 +51,7 @@ export default function Register() {
       setStep(2);
     } else if (step === 2 && validateStep2()) {
       // Check if non-student email — show payment step
-      if (!isStudentEmail) {
+      if (!isStudentEmail && formData.role !== 'buyer') {
         setShowPayment(true);
         return;
       }
@@ -235,7 +235,7 @@ export default function Register() {
                   <label className="block text-sm font-medium mb-1">Email</label>
                   <input type="email" value={formData.email} onChange={e => updateField('email', e.target.value)} className="input-field" placeholder="e.g. kwame@university.edu.gh" />
                   {errors.email && <p className="text-danger text-xs mt-1">{errors.email}</p>}
-                  {formData.email && !isStudentEmail && formData.email.includes('@') && (
+                  {formData.email && !isStudentEmail && formData.role !== 'buyer' && formData.email.includes('@') && (
                     <p className="text-orange-brand text-xs mt-1 flex items-center gap-1">
                       <AlertTriangle className="h-3 w-3" />
                       Non-student email. A one-time access fee of GHS 120 will be required.
