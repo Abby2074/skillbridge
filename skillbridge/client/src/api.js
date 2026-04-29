@@ -1,7 +1,5 @@
-import axios from 'axios';
-
-const API_BASE = '/api';
-
+const API_BASE = import.meta.env.VITE_API_URL || 'https://skillbridge-api-8w7e.onrender.com/api';
+ 
 const api = axios.create({
   baseURL: API_BASE,
   headers: { 'Content-Type': 'application/json' },
