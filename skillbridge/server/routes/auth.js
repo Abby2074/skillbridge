@@ -55,7 +55,7 @@ router.post('/register', authLimiter, [
     }
 
     // Non-student emails require access fee payment
-    if (!isStudentEmail && !access_fee_reference) {
+    if (!isStudentEmail && role !== 'buyer' && !access_fee_reference) {
       return res.status(402).json({
         error: 'Non-student email detected. A one-time access fee of GHS 120 is required to use SkillBridge.',
         requires_payment: true,
