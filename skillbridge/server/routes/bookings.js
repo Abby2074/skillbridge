@@ -5,6 +5,12 @@ const { body, validationResult } = require('express-validator');
 const db = require('../db');
 const { authenticateToken } = require('../middleware/auth');
 
+// Helper: get or create the platform admin account for commission tracking
+function getPlatformAdminId() {
+  const admin = db.prepare('SELECT user_id FROM users WHERE is_admin = 1 LIMIT 1').get();
+  return admin ? admin.user_id : null;
+}
+
 // POST /api/bookings
 router.post('/', authenticateToken, [
   body('listing_id').notEmpty().withMessage('Listing is required'),
@@ -20,28 +26,33 @@ router.post('/', authenticateToken, [
 
     const { listing_id, availability_id, scheduled_date, delivery_format, learning_objectives } = req.body;
 
+    // Validate scheduled_date is in the future
+    const scheduledTime = new Date(scheduled_date);
+    if (isNaN(scheduledTime.getTime()) || scheduledTime <= new Date()) {
+      return res.status(400).json({ error: 'Scheduled date must be a valid future date' });
+    }
+
     const listing = db.prepare('SELECT * FROM session_listings WHERE listing_id = ? AND status = \'active\'').get(listing_id);
     if (!listing) return res.status(404).json({ error: 'Listing not found or inactive' });
-
-    const slot = db.prepare('SELECT * FROM availability WHERE availability_id = ? AND is_booked = 0').get(availability_id);
-    if (!slot) return res.status(400).json({ error: 'Time slot not available' });
-
-    const student = db.prepare('SELECT * FROM users WHERE user_id = ?').get(req.user.user_id);
-    if (!student) return res.status(404).json({ error: 'Student not found' });
 
     const session_fee = listing.hourly_rate;
     const platform_commission = Math.round(session_fee * 0.10 * 100) / 100;
     const tutor_earnings = Math.round(session_fee * 0.90 * 100) / 100;
 
-    if (student.wallet_balance < session_fee) {
-      return res.status(400).json({ error: 'Insufficient wallet balance', wallet_balance: student.wallet_balance, session_fee });
-    }
-
-    // Atomic transaction
+    // Atomic transaction — all checks and mutations inside to prevent race conditions
     const booking_id = uuidv4();
     const now = new Date().toISOString();
 
     const createBooking = db.transaction(() => {
+      // Re-check slot availability inside transaction
+      const slot = db.prepare('SELECT * FROM availability WHERE availability_id = ? AND is_booked = 0').get(availability_id);
+      if (!slot) throw new Error('SLOT_UNAVAILABLE');
+
+      // Re-check wallet balance inside transaction
+      const student = db.prepare('SELECT wallet_balance FROM users WHERE user_id = ?').get(req.user.user_id);
+      if (!student) throw new Error('STUDENT_NOT_FOUND');
+      if (student.wallet_balance < session_fee) throw new Error('INSUFFICIENT_BALANCE');
+
       // Deduct from student wallet
       db.prepare('UPDATE users SET wallet_balance = wallet_balance - ? WHERE user_id = ?').run(session_fee, req.user.user_id);
 
@@ -63,7 +74,14 @@ router.post('/', authenticateToken, [
       );
     });
 
-    createBooking();
+    try {
+      createBooking();
+    } catch (txErr) {
+      if (txErr.message === 'SLOT_UNAVAILABLE') return res.status(400).json({ error: 'Time slot not available' });
+      if (txErr.message === 'STUDENT_NOT_FOUND') return res.status(404).json({ error: 'Student not found' });
+      if (txErr.message === 'INSUFFICIENT_BALANCE') return res.status(400).json({ error: 'Insufficient wallet balance', session_fee });
+      throw txErr;
+    }
 
     const booking = db.prepare('SELECT * FROM bookings WHERE booking_id = ?').get(booking_id);
     res.status(201).json(booking);
@@ -204,11 +222,14 @@ router.put('/:bookingId/complete', authenticateToken, (req, res) => {
         uuidv4(), booking.tutor_id, req.params.bookingId, booking.tutor_earnings, `EARN-${req.params.bookingId.slice(0, 8)}`, now
       );
 
-      // Record commission
-      db.prepare(`INSERT INTO transactions (transaction_id, user_id, booking_id, transaction_type, amount, direction, status, payment_reference, created_at)
-        VALUES (?, ?, ?, 'commission', ?, 'credit', 'completed', ?, ?)`).run(
-        uuidv4(), booking.tutor_id, req.params.bookingId, booking.platform_commission, `COM-${req.params.bookingId.slice(0, 8)}`, now
-      );
+      // Record commission to platform admin account
+      const platformAdminId = getPlatformAdminId();
+      if (platformAdminId) {
+        db.prepare(`INSERT INTO transactions (transaction_id, user_id, booking_id, transaction_type, amount, direction, status, payment_reference, created_at)
+          VALUES (?, ?, ?, 'commission', ?, 'credit', 'completed', ?, ?)`).run(
+          uuidv4(), platformAdminId, req.params.bookingId, booking.platform_commission, `COM-${req.params.bookingId.slice(0, 8)}`, now
+        );
+      }
     });
 
     completeBooking();
@@ -232,8 +253,11 @@ router.put('/:bookingId/cancel', authenticateToken, (req, res) => {
     const currentTime = new Date().getTime();
     const hoursUntilSession = (scheduledTime - currentTime) / (1000 * 60 * 60);
 
-    // Full refund if more than 24 hours before session
-    const refundAmount = hoursUntilSession > 24 ? booking.session_fee : Math.round(booking.session_fee * 0.50 * 100) / 100;
+    // Full refund if more than 6 hours before session, 25% penalty otherwise
+    const refundAmount = hoursUntilSession > 6 ? booking.session_fee : Math.round(booking.session_fee * 0.75 * 100) / 100;
+
+    // Track the non-refunded portion as platform commission
+    const nonRefundedAmount = Math.round((booking.session_fee - refundAmount) * 100) / 100;
 
     const cancelBooking = db.transaction(() => {
       db.prepare("UPDATE bookings SET status = 'cancelled' WHERE booking_id = ?").run(req.params.bookingId);
@@ -244,6 +268,17 @@ router.put('/:bookingId/cancel', authenticateToken, (req, res) => {
         VALUES (?, ?, ?, 'refund', ?, 'credit', 'completed', ?, ?)`).run(
         uuidv4(), booking.student_id, req.params.bookingId, refundAmount, `REF-${req.params.bookingId.slice(0, 8)}`, now
       );
+
+      // Record cancellation fee as commission if partial refund
+      if (nonRefundedAmount > 0) {
+        const platformAdminId = getPlatformAdminId();
+        if (platformAdminId) {
+          db.prepare(`INSERT INTO transactions (transaction_id, user_id, booking_id, transaction_type, amount, direction, status, payment_reference, created_at)
+            VALUES (?, ?, ?, 'commission', ?, 'credit', 'completed', ?, ?)`).run(
+            uuidv4(), platformAdminId, req.params.bookingId, nonRefundedAmount, `CANCEL-COM-${req.params.bookingId.slice(0, 8)}`, now
+          );
+        }
+      }
     });
 
     cancelBooking();

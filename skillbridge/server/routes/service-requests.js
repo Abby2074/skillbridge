@@ -224,17 +224,15 @@ router.put('/:id/applications/:appId/accept', authenticateToken, (req, res) => {
 
     const now = new Date().toISOString();
     const agreed_price = application.proposed_price;
-    const commission = agreed_price * 0.10;
-    const earnings = agreed_price * 0.90;
+    const commission = Math.round(agreed_price * 0.10 * 100) / 100;
+    const earnings = Math.round(agreed_price * 0.90 * 100) / 100;
 
-    // Check buyer has enough balance
-    const buyer = db.prepare('SELECT wallet_balance FROM users WHERE user_id = ?').get(req.user.user_id);
-    if (buyer.wallet_balance < agreed_price) {
-      return res.status(400).json({ error: 'Insufficient wallet balance. Please top up.' });
-    }
-
-    // Atomic transaction: deduct from buyer, create order, update statuses
+    // Atomic transaction: all checks and mutations inside to prevent race conditions
     const createOrder = db.transaction(() => {
+      // Check buyer balance inside transaction
+      const buyer = db.prepare('SELECT wallet_balance FROM users WHERE user_id = ?').get(req.user.user_id);
+      if (buyer.wallet_balance < agreed_price) throw new Error('INSUFFICIENT_BALANCE');
+
       // Deduct from buyer wallet (escrow)
       db.prepare('UPDATE users SET wallet_balance = wallet_balance - ? WHERE user_id = ?').run(agreed_price, req.user.user_id);
 
@@ -262,8 +260,13 @@ router.put('/:id/applications/:appId/accept', authenticateToken, (req, res) => {
       return order_id;
     });
 
-    const order_id = createOrder();
-    res.json({ message: 'Application accepted, order created', order_id });
+    try {
+      const order_id = createOrder();
+      res.json({ message: 'Application accepted, order created', order_id });
+    } catch (txErr) {
+      if (txErr.message === 'INSUFFICIENT_BALANCE') return res.status(400).json({ error: 'Insufficient wallet balance. Please top up.' });
+      throw txErr;
+    }
   } catch (err) {
     console.error('Accept application error:', err);
     res.status(500).json({ error: 'Failed to accept application' });

@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Menu, X, ChevronDown, User, LogOut, LayoutDashboard, Wallet, BookOpen, Shield, Briefcase } from 'lucide-react';
+import { Menu, X, ChevronDown, User, LogOut, LayoutDashboard, Wallet, BookOpen, Shield, Briefcase, ShoppingCart, Package } from 'lucide-react';
+import { useCart } from '../context/CartContext';
 
 export default function Navbar() {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
+  const { totalItems } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const navigate = useNavigate();
@@ -30,6 +32,12 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-6">
             <Link to="/browse" className="text-text-muted hover:text-red-brand font-medium transition-colors">Browse <span className="text-red-brand">Tutors</span></Link>
             <Link to="/marketplace" className="text-text-muted hover:text-red-brand font-medium transition-colors">Marketplace</Link>
+            <Link to="/cart" className="relative text-text-muted hover:text-red-brand transition-colors">
+              <ShoppingCart className="h-5 w-5" />
+              {totalItems > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-brand text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">{totalItems}</span>
+              )}
+            </Link>
             {isAuthenticated ? (
               <div className="relative">
                 <button onClick={() => setDropdownOpen(!dropdownOpen)} className="flex items-center gap-2 text-text-main hover:text-primary font-medium transition-colors">
@@ -50,6 +58,9 @@ export default function Navbar() {
                     </Link>
                     <Link to="/dashboard/wallet" onClick={() => setDropdownOpen(false)} className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-orange-soft">
                       <Wallet className="h-4 w-4" /> Wallet
+                    </Link>
+                    <Link to="/order-tracking" onClick={() => setDropdownOpen(false)} className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-orange-soft">
+                      <Package className="h-4 w-4" /> Order Tracking
                     </Link>
                     <Link to="/dashboard/profile" onClick={() => setDropdownOpen(false)} className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-orange-soft">
                       <User className="h-4 w-4" /> Edit Profile
@@ -86,6 +97,9 @@ export default function Navbar() {
         <div className="md:hidden bg-white border-t border-border px-4 pb-4">
           <Link to="/browse" onClick={() => setMobileOpen(false)} className="block py-3 text-text-muted hover:text-red-brand font-medium">Browse Tutors</Link>
           <Link to="/marketplace" onClick={() => setMobileOpen(false)} className="block py-3 text-text-muted hover:text-red-brand font-medium">Marketplace</Link>
+          <Link to="/cart" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 py-3 text-text-muted hover:text-red-brand font-medium">
+            <ShoppingCart className="h-4 w-4" /> Cart {totalItems > 0 && <span className="bg-red-brand text-white text-xs font-bold px-1.5 py-0.5 rounded-full">{totalItems}</span>}
+          </Link>
           {isAuthenticated ? (
             <>
               <Link to="/dashboard" onClick={() => setMobileOpen(false)} className="block py-3 text-text-muted hover:text-primary font-medium">Dashboard</Link>

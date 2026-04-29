@@ -7,12 +7,14 @@ import { useToast } from '../components/Toast';
 import Modal from '../components/Modal';
 import StarRating from '../components/StarRating';
 import Loader from '../components/Loader';
-import { Star, Clock, MapPin, MessageSquare, ShoppingCart, User, Briefcase, ArrowLeft } from 'lucide-react';
+import { Star, Clock, MapPin, MessageSquare, ShoppingCart, User, Briefcase, ArrowLeft, PlusCircle } from 'lucide-react';
+import { useCart } from '../context/CartContext';
 
 export default function GigDetail() {
   const { gigId } = useParams();
   const { user, isAuthenticated } = useAuth();
   const { addToast } = useToast();
+  const { addItem, items } = useCart();
   const navigate = useNavigate();
 
   const [orderModal, setOrderModal] = useState(false);
@@ -126,6 +128,25 @@ export default function GigDetail() {
               <div className="space-y-2">
                 <button onClick={() => { setOrderModal(true); setAgreedPrice(gig.min_price); }} className="btn-primary w-full flex items-center justify-center gap-2">
                   <ShoppingCart className="h-4 w-4" /> Order Now
+                </button>
+                <button
+                  onClick={() => {
+                    addItem({
+                      type: 'gig',
+                      gig_id: gig.gig_id,
+                      title: gig.title,
+                      provider_name: gig.freelancer_name,
+                      agreed_price: gig.min_price,
+                      price: gig.min_price,
+                      description: gig.description?.slice(0, 100),
+                      delivery_format: gig.delivery_format,
+                    });
+                    addToast('Added to cart!');
+                  }}
+                  disabled={items.some(i => i.cart_key === `gig-${gig.gig_id}`)}
+                  className="btn-outline w-full flex items-center justify-center gap-2"
+                >
+                  <PlusCircle className="h-4 w-4" /> {items.some(i => i.cart_key === `gig-${gig.gig_id}`) ? 'In Cart' : 'Add to Cart'}
                 </button>
                 <button onClick={() => setMessageModal(true)} className="btn-outline w-full flex items-center justify-center gap-2">
                   <MessageSquare className="h-4 w-4" /> Contact Freelancer

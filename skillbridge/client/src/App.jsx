@@ -21,11 +21,22 @@ import GigDetail from './pages/GigDetail';
 import ServiceRequests from './pages/ServiceRequests';
 import ServiceRequestDetail from './pages/ServiceRequestDetail';
 import PostServiceRequest from './pages/PostServiceRequest';
+import Cart from './pages/Cart';
+import Checkout from './pages/Checkout';
+import OrderTracking from './pages/OrderTracking';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated, loading } = useAuth();
   if (loading) return <Loader />;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return children;
+}
+
+function AdminRoute({ children }) {
+  const { isAuthenticated, isAdmin, loading } = useAuth();
+  if (loading) return <Loader />;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!isAdmin) return <Navigate to="/dashboard" replace />;
   return children;
 }
 
@@ -60,6 +71,9 @@ export default function App() {
             <Route path="/service-requests" element={<ServiceRequests />} />
             <Route path="/service-request/:requestId" element={<ServiceRequestDetail />} />
             <Route path="/post-request" element={<ProtectedRoute><PostServiceRequest /></ProtectedRoute>} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+            <Route path="/order-tracking" element={<ProtectedRoute><OrderTracking /></ProtectedRoute>} />
 
             {/* Protected Dashboard Routes */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>}>
@@ -76,13 +90,14 @@ export default function App() {
             <Route path="/dashboard/profile" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
             {/* Admin Routes */}
-            <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/users" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/reviews" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/finance" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/orders" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/skills" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/admin/requests" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+            <Route path="/admin/crm" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+            <Route path="/admin/finance" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+            <Route path="/admin/orders" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+            <Route path="/admin/inventory" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+            <Route path="/admin/supply-chain" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+            <Route path="/admin/deliveries" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+            <Route path="/admin/requests" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
 
             {/* Catch all */}
             <Route path="*" element={<Navigate to="/" replace />} />

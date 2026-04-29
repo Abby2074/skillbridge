@@ -28,8 +28,8 @@ router.get('/dashboard', authenticateToken, requireAdmin, (req, res) => {
     `).all();
 
     const recentTransactions = db.prepare(`
-      SELECT t.*, u.full_name as user_name
-      FROM transactions t JOIN users u ON t.user_id = u.user_id
+      SELECT t.*, COALESCE(u.full_name, 'Platform') as user_name
+      FROM transactions t LEFT JOIN users u ON t.user_id = u.user_id
       ORDER BY t.created_at DESC LIMIT 20
     `).all();
 
@@ -202,8 +202,8 @@ router.get('/reports/financial', authenticateToken, requireAdmin, (req, res) => 
     }
 
     const transactions = db.prepare(`
-      SELECT t.*, u.full_name as user_name
-      FROM transactions t JOIN users u ON t.user_id = u.user_id
+      SELECT t.*, COALESCE(u.full_name, 'Platform') as user_name
+      FROM transactions t LEFT JOIN users u ON t.user_id = u.user_id
       WHERE 1=1 ${dateFilter}
       ORDER BY t.created_at DESC
     `).all(...params);
@@ -237,8 +237,8 @@ router.get('/reports/financial/csv', authenticateToken, requireAdmin, (req, res)
     }
 
     const transactions = db.prepare(`
-      SELECT t.transaction_id, u.full_name as user_name, u.email, t.transaction_type, t.amount, t.direction, t.status, t.payment_reference, t.created_at
-      FROM transactions t JOIN users u ON t.user_id = u.user_id
+      SELECT t.transaction_id, COALESCE(u.full_name, 'Platform') as user_name, COALESCE(u.email, '') as email, t.transaction_type, t.amount, t.direction, t.status, t.payment_reference, t.created_at
+      FROM transactions t LEFT JOIN users u ON t.user_id = u.user_id
       WHERE 1=1 ${dateFilter}
       ORDER BY t.created_at DESC
     `).all(...params);
@@ -342,6 +342,404 @@ router.get('/service-orders', authenticateToken, requireAdmin, (req, res) => {
     res.json(orders);
   } catch (err) {
     res.status(500).json({ error: 'Failed to get service orders' });
+  }
+});
+
+// ========== CRM MODULE ==========
+
+// GET /api/admin/crm/customers - Full customer database with activity stats
+router.get('/crm/customers', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    const { search, sort = 'recent' } = req.query;
+    let query = `
+      SELECT u.user_id, u.full_name, u.email, u.role, u.institution, u.programme,
+        u.wallet_balance, u.earnings_balance, u.is_active, u.created_at, u.last_login_at,
+        COUNT(DISTINCT CASE WHEN b.status IN ('completed','rated') THEN b.booking_id END) as total_sessions,
+        COUNT(DISTINCT CASE WHEN so.status = 'completed' THEN so.order_id END) as total_service_orders,
+        COALESCE(SUM(CASE WHEN t.direction = 'debit' THEN t.amount ELSE 0 END), 0) as total_spent,
+        COUNT(DISTINCT st.ticket_id) as support_tickets,
+        COUNT(DISTINCT r.review_id) as reviews_given
+      FROM users u
+      LEFT JOIN bookings b ON (u.user_id = b.student_id OR u.user_id = b.tutor_id)
+      LEFT JOIN service_orders so ON (u.user_id = so.buyer_id OR u.user_id = so.freelancer_id)
+      LEFT JOIN transactions t ON u.user_id = t.user_id
+      LEFT JOIN support_tickets st ON u.email = st.email
+      LEFT JOIN reviews r ON u.user_id = r.student_id
+      WHERE u.is_admin = 0
+    `;
+    const params = [];
+
+    if (search) {
+      query += ' AND (u.full_name LIKE ? OR u.email LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`);
+    }
+
+    query += ' GROUP BY u.user_id';
+
+    if (sort === 'spent') query += ' ORDER BY total_spent DESC';
+    else if (sort === 'active') query += ' ORDER BY total_sessions DESC';
+    else query += ' ORDER BY u.created_at DESC';
+
+    const customers = db.prepare(query).all(...params);
+    res.json(customers);
+  } catch (err) {
+    console.error('CRM customers error:', err);
+    res.status(500).json({ error: 'Failed to get customers' });
+  }
+});
+
+// GET /api/admin/crm/customers/:id - Single customer detail with communication history
+router.get('/crm/customers/:id', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    const userId = req.params.id;
+    const user = db.prepare(`
+      SELECT user_id, full_name, email, role, institution, programme, year_of_study, bio,
+        wallet_balance, earnings_balance, is_active, is_student, created_at, last_login_at
+      FROM users WHERE user_id = ?
+    `).get(userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const transactions = db.prepare(`
+      SELECT * FROM transactions WHERE user_id = ? ORDER BY created_at DESC LIMIT 20
+    `).all(userId);
+
+    const bookings = db.prepare(`
+      SELECT b.*, sl.title, s.skill_name,
+        tu.full_name as tutor_name, su.full_name as student_name
+      FROM bookings b
+      JOIN session_listings sl ON b.listing_id = sl.listing_id
+      JOIN skills s ON sl.skill_id = s.skill_id
+      JOIN users tu ON b.tutor_id = tu.user_id
+      JOIN users su ON b.student_id = su.user_id
+      WHERE b.student_id = ? OR b.tutor_id = ?
+      ORDER BY b.requested_at DESC LIMIT 20
+    `).all(userId, userId);
+
+    const messages = db.prepare(`
+      SELECT sm.*, sender.full_name as sender_name, receiver.full_name as receiver_name
+      FROM service_messages sm
+      JOIN users sender ON sm.sender_id = sender.user_id
+      JOIN users receiver ON sm.receiver_id = receiver.user_id
+      WHERE sm.sender_id = ? OR sm.receiver_id = ?
+      ORDER BY sm.sent_at DESC LIMIT 30
+    `).all(userId, userId);
+
+    const userEmail = user.email;
+    const supportTickets = db.prepare(`
+      SELECT * FROM support_tickets WHERE email = ? ORDER BY created_at DESC
+    `).all(userEmail);
+
+    const reviews = db.prepare(`
+      SELECT r.*, tu.full_name as tutor_name
+      FROM reviews r JOIN users tu ON r.tutor_id = tu.user_id
+      WHERE r.student_id = ? ORDER BY r.created_at DESC
+    `).all(userId);
+
+    res.json({ customer: user, transactions, bookings, messages, support_tickets: supportTickets, reviews });
+  } catch (err) {
+    console.error('CRM customer detail error:', err);
+    res.status(500).json({ error: 'Failed to get customer details' });
+  }
+});
+
+// GET /api/admin/crm/communications - All recent communications across platform
+router.get('/crm/communications', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    const messages = db.prepare(`
+      SELECT sm.*, sender.full_name as sender_name, receiver.full_name as receiver_name
+      FROM service_messages sm
+      JOIN users sender ON sm.sender_id = sender.user_id
+      JOIN users receiver ON sm.receiver_id = receiver.user_id
+      ORDER BY sm.sent_at DESC LIMIT 50
+    `).all();
+
+    const sessionMessages = db.prepare(`
+      SELECT m.*, u.full_name as sender_name, b.booking_id
+      FROM messages m
+      JOIN users u ON m.sender_id = u.user_id
+      JOIN bookings b ON m.booking_id = b.booking_id
+      ORDER BY m.sent_at DESC LIMIT 50
+    `).all();
+
+    const tickets = db.prepare(`
+      SELECT st.*, st.name as user_name
+      FROM support_tickets st
+      ORDER BY st.created_at DESC LIMIT 30
+    `).all();
+
+    res.json({ messages, session_messages: sessionMessages, support_tickets: tickets });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to get communications' });
+  }
+});
+
+// GET /api/admin/crm/feedback - All reviews and support tickets (feedback management)
+router.get('/crm/feedback', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    const reviews = db.prepare(`
+      SELECT r.*, su.full_name as student_name, tu.full_name as tutor_name
+      FROM reviews r
+      JOIN users su ON r.student_id = su.user_id
+      JOIN users tu ON r.tutor_id = tu.user_id
+      ORDER BY r.created_at DESC
+    `).all();
+
+    const serviceReviews = db.prepare(`
+      SELECT sr.*, reviewer.full_name as reviewer_name, reviewee.full_name as reviewee_name
+      FROM service_reviews sr
+      JOIN users reviewer ON sr.reviewer_id = reviewer.user_id
+      JOIN users reviewee ON sr.reviewee_id = reviewee.user_id
+      ORDER BY sr.created_at DESC
+    `).all();
+
+    const avgRating = db.prepare('SELECT AVG(star_rating) as avg FROM reviews').get();
+    const avgServiceRating = db.prepare('SELECT AVG(star_rating) as avg FROM service_reviews').get();
+
+    res.json({
+      reviews,
+      service_reviews: serviceReviews,
+      stats: {
+        total_reviews: reviews.length,
+        total_service_reviews: serviceReviews.length,
+        avg_session_rating: avgRating.avg ? Number(avgRating.avg).toFixed(1) : 'N/A',
+        avg_service_rating: avgServiceRating.avg ? Number(avgServiceRating.avg).toFixed(1) : 'N/A',
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to get feedback' });
+  }
+});
+
+// ========== INVENTORY MANAGEMENT ==========
+
+// GET /api/admin/inventory - Complete inventory of all services/listings
+router.get('/inventory', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    // Tutoring listings (service products)
+    const listings = db.prepare(`
+      SELECT sl.*, s.skill_name, s.category, u.full_name as tutor_name, u.institution,
+        COUNT(DISTINCT a.availability_id) as available_slots,
+        COUNT(DISTINCT CASE WHEN b.status IN ('completed','rated') THEN b.booking_id END) as completed_sessions,
+        COUNT(DISTINCT CASE WHEN b.status IN ('requested','confirmed','in_progress') THEN b.booking_id END) as active_bookings
+      FROM session_listings sl
+      JOIN skills s ON sl.skill_id = s.skill_id
+      JOIN users u ON sl.tutor_id = u.user_id
+      LEFT JOIN availability a ON sl.tutor_id = a.tutor_id
+      LEFT JOIN bookings b ON sl.listing_id = b.listing_id
+      GROUP BY sl.listing_id
+      ORDER BY sl.created_at DESC
+    `).all();
+
+    // Service gigs (freelance products)
+    const gigs = db.prepare(`
+      SELECT g.*, sc.category_name, u.full_name as freelancer_name, u.institution,
+        COUNT(DISTINCT CASE WHEN so.status = 'completed' THEN so.order_id END) as completed_orders,
+        COUNT(DISTINCT CASE WHEN so.status IN ('pending','in_progress','delivered') THEN so.order_id END) as active_orders
+      FROM service_gigs g
+      JOIN service_categories sc ON g.category_id = sc.category_id
+      JOIN users u ON g.freelancer_id = u.user_id
+      LEFT JOIN service_orders so ON g.gig_id = so.gig_id
+      GROUP BY g.gig_id
+      ORDER BY g.created_at DESC
+    `).all();
+
+    // Summary stats
+    const totalActiveListings = listings.filter(l => l.status === 'active').length;
+    const totalActiveGigs = gigs.filter(g => g.status === 'active').length;
+    const totalAvailSlots = listings.reduce((s, l) => s + l.available_slots, 0);
+
+    res.json({
+      listings,
+      gigs,
+      stats: {
+        total_listings: listings.length,
+        active_listings: totalActiveListings,
+        total_gigs: gigs.length,
+        active_gigs: totalActiveGigs,
+        total_availability_slots: totalAvailSlots,
+        total_products: listings.length + gigs.length,
+      }
+    });
+  } catch (err) {
+    console.error('Inventory error:', err);
+    res.status(500).json({ error: 'Failed to get inventory' });
+  }
+});
+
+// ========== SUPPLY CHAIN MANAGEMENT ==========
+
+// GET /api/admin/supply-chain - Suppliers, partners, distribution
+router.get('/supply-chain', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    // Suppliers = Tutors and Freelancers who supply services
+    const suppliers = db.prepare(`
+      SELECT u.user_id, u.full_name, u.email, u.institution, u.role, u.is_active, u.created_at,
+        u.earnings_balance,
+        COUNT(DISTINCT sl.listing_id) as total_listings,
+        COUNT(DISTINCT g.gig_id) as total_gigs,
+        COUNT(DISTINCT CASE WHEN b.status IN ('completed','rated') THEN b.booking_id END) as completed_sessions,
+        COUNT(DISTINCT CASE WHEN so.status = 'completed' THEN so.order_id END) as completed_orders,
+        COALESCE(AVG(r.star_rating), 0) as avg_rating
+      FROM users u
+      LEFT JOIN session_listings sl ON u.user_id = sl.tutor_id AND sl.status = 'active'
+      LEFT JOIN service_gigs g ON u.user_id = g.freelancer_id AND g.status = 'active'
+      LEFT JOIN bookings b ON u.user_id = b.tutor_id
+      LEFT JOIN service_orders so ON u.user_id = so.freelancer_id
+      LEFT JOIN reviews r ON u.user_id = r.tutor_id
+      WHERE u.role IN ('tutor', 'both') AND u.is_admin = 0
+      GROUP BY u.user_id
+      ORDER BY completed_sessions + completed_orders DESC
+    `).all();
+
+    // Partners = Institutions
+    const partners = db.prepare(`
+      SELECT u.institution,
+        COUNT(DISTINCT u.user_id) as total_users,
+        COUNT(DISTINCT CASE WHEN u.role IN ('tutor','both') THEN u.user_id END) as suppliers,
+        COUNT(DISTINCT CASE WHEN u.role IN ('student','both') THEN u.user_id END) as buyers,
+        COUNT(DISTINCT sl.listing_id) as listings_supplied,
+        COUNT(DISTINCT g.gig_id) as gigs_supplied,
+        COUNT(DISTINCT CASE WHEN b.status IN ('completed','rated') THEN b.booking_id END) as sessions_delivered,
+        COUNT(DISTINCT CASE WHEN so.status = 'completed' THEN so.order_id END) as services_delivered,
+        COALESCE(SUM(CASE WHEN b.status IN ('completed','rated') THEN b.session_fee ELSE 0 END), 0) +
+        COALESCE(SUM(CASE WHEN so.status = 'completed' THEN so.agreed_price ELSE 0 END), 0) as total_revenue
+      FROM users u
+      LEFT JOIN session_listings sl ON u.user_id = sl.tutor_id
+      LEFT JOIN service_gigs g ON u.user_id = g.freelancer_id
+      LEFT JOIN bookings b ON u.user_id = b.tutor_id
+      LEFT JOIN service_orders so ON u.user_id = so.freelancer_id
+      WHERE u.is_admin = 0
+      GROUP BY u.institution
+      ORDER BY total_revenue DESC
+    `).all();
+
+    // Distribution = How services are distributed (by category, format, status)
+    const distributionByCategory = db.prepare(`
+      SELECT s.category, COUNT(DISTINCT sl.listing_id) as listings,
+        COUNT(DISTINCT CASE WHEN b.status IN ('completed','rated') THEN b.booking_id END) as delivered
+      FROM skills s
+      LEFT JOIN session_listings sl ON s.skill_id = sl.skill_id AND sl.status = 'active'
+      LEFT JOIN bookings b ON sl.listing_id = b.listing_id
+      WHERE s.is_active = 1
+      GROUP BY s.category
+      ORDER BY delivered DESC
+    `).all();
+
+    const distributionByFormat = db.prepare(`
+      SELECT sl.delivery_format as format,
+        COUNT(DISTINCT sl.listing_id) as count,
+        COUNT(DISTINCT CASE WHEN b.status IN ('completed','rated') THEN b.booking_id END) as delivered
+      FROM session_listings sl
+      LEFT JOIN bookings b ON sl.listing_id = b.listing_id
+      WHERE sl.status = 'active'
+      GROUP BY sl.delivery_format
+    `).all();
+
+    // Service categories distribution
+    const serviceDistribution = db.prepare(`
+      SELECT sc.category_name, COUNT(DISTINCT g.gig_id) as gigs,
+        COUNT(DISTINCT CASE WHEN so.status = 'completed' THEN so.order_id END) as delivered
+      FROM service_categories sc
+      LEFT JOIN service_gigs g ON sc.category_id = g.category_id AND g.status = 'active'
+      LEFT JOIN service_orders so ON g.gig_id = so.gig_id
+      WHERE sc.is_active = 1
+      GROUP BY sc.category_id
+      ORDER BY delivered DESC
+    `).all();
+
+    res.json({
+      suppliers,
+      partners,
+      distribution: {
+        by_category: distributionByCategory,
+        by_format: distributionByFormat,
+        by_service_category: serviceDistribution,
+      },
+      stats: {
+        total_suppliers: suppliers.length,
+        active_suppliers: suppliers.filter(s => s.is_active).length,
+        total_partners: partners.length,
+        total_products_in_supply: suppliers.reduce((s, sup) => s + sup.total_listings + sup.total_gigs, 0),
+      }
+    });
+  } catch (err) {
+    console.error('Supply chain error:', err);
+    res.status(500).json({ error: 'Failed to get supply chain data' });
+  }
+});
+
+// ========== DELIVERY MANAGEMENT ==========
+
+// GET /api/admin/deliveries - All orders/bookings with delivery status tracking
+router.get('/deliveries', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    const { status, type } = req.query;
+
+    // Session deliveries
+    let sessionQuery = `
+      SELECT b.booking_id as id, 'session' as type, sl.title, s.skill_name,
+        tu.full_name as provider_name, su.full_name as customer_name,
+        b.status, b.delivery_format, b.scheduled_date as delivery_date,
+        b.session_fee as price, b.requested_at as created_at, b.completed_at
+      FROM bookings b
+      JOIN session_listings sl ON b.listing_id = sl.listing_id
+      JOIN skills s ON sl.skill_id = s.skill_id
+      JOIN users tu ON b.tutor_id = tu.user_id
+      JOIN users su ON b.student_id = su.user_id
+    `;
+
+    // Service deliveries
+    let serviceQuery = `
+      SELECT so.order_id as id, 'service' as type,
+        COALESCE(g.title, sr.title) as title, '' as skill_name,
+        freelancer.full_name as provider_name, buyer.full_name as customer_name,
+        so.status, 'remote' as delivery_format, so.created_at as delivery_date,
+        so.agreed_price as price, so.created_at, so.completed_at
+      FROM service_orders so
+      JOIN users buyer ON so.buyer_id = buyer.user_id
+      JOIN users freelancer ON so.freelancer_id = freelancer.user_id
+      LEFT JOIN service_gigs g ON so.gig_id = g.gig_id
+      LEFT JOIN service_requests sr ON so.request_id = sr.request_id
+    `;
+
+    if (status) {
+      sessionQuery += ` WHERE b.status = '${status}'`;
+      serviceQuery += ` WHERE so.status = '${status}'`;
+    }
+
+    let deliveries = [];
+
+    if (!type || type === 'session') {
+      deliveries = deliveries.concat(db.prepare(sessionQuery + ' ORDER BY b.requested_at DESC').all());
+    }
+    if (!type || type === 'service') {
+      deliveries = deliveries.concat(db.prepare(serviceQuery + ' ORDER BY so.created_at DESC').all());
+    }
+
+    // Sort combined results by date
+    deliveries.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    // Stats
+    const totalDeliveries = deliveries.length;
+    const completed = deliveries.filter(d => d.status === 'completed' || d.status === 'rated').length;
+    const inProgress = deliveries.filter(d => ['confirmed', 'in_progress', 'delivered'].includes(d.status)).length;
+    const pending = deliveries.filter(d => ['requested', 'pending'].includes(d.status)).length;
+    const cancelled = deliveries.filter(d => d.status === 'cancelled').length;
+
+    res.json({
+      deliveries,
+      stats: {
+        total: totalDeliveries,
+        completed,
+        in_progress: inProgress,
+        pending,
+        cancelled,
+        completion_rate: totalDeliveries > 0 ? ((completed / totalDeliveries) * 100).toFixed(1) : '0',
+      }
+    });
+  } catch (err) {
+    console.error('Deliveries error:', err);
+    res.status(500).json({ error: 'Failed to get deliveries' });
   }
 });
 

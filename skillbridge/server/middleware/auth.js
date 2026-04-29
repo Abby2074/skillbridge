@@ -1,6 +1,12 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'skillbridge_dev_secret_key_2024';
+// Use env variable or generate a random secret (logged once so dev can copy it)
+let JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  JWT_SECRET = crypto.randomBytes(32).toString('hex');
+  console.warn('⚠️  No JWT_SECRET set in env — generated ephemeral secret. Sessions will not persist across server restarts. Set JWT_SECRET in .env for persistence.');
+}
 
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];

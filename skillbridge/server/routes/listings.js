@@ -8,6 +8,15 @@ const { authenticateToken } = require('../middleware/auth');
 // GET /api/listings
 router.get('/', (req, res) => {
   try {
+    const { tutor_id } = req.query;
+    let whereClause = `WHERE sl.status = 'active' AND u.is_active = 1`;
+    const params = [];
+
+    if (tutor_id) {
+      whereClause = `WHERE sl.tutor_id = ?`;
+      params.push(tutor_id);
+    }
+
     const listings = db.prepare(`
       SELECT sl.*, s.skill_name, s.category,
         u.full_name as tutor_name, u.institution, u.profile_photo_url,
@@ -19,10 +28,10 @@ router.get('/', (req, res) => {
       JOIN users u ON sl.tutor_id = u.user_id
       LEFT JOIN reviews r ON sl.tutor_id = r.tutor_id
       LEFT JOIN bookings b ON sl.tutor_id = b.tutor_id
-      WHERE sl.status = 'active' AND u.is_active = 1
+      ${whereClause}
       GROUP BY sl.listing_id
       ORDER BY avg_rating DESC
-    `).all();
+    `).all(...params);
 
     res.json(listings);
   } catch (err) {

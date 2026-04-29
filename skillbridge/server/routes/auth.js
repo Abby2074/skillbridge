@@ -4,19 +4,29 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
 const { body, validationResult } = require('express-validator');
+const rateLimit = require('express-rate-limit');
 const db = require('../db');
 const { authenticateToken, JWT_SECRET } = require('../middleware/auth');
 
+// Rate limiting for auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 15, // limit each IP to 15 requests per window
+  message: { error: 'Too many attempts. Please try again in 15 minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Access fee for non-student users (GHS)
-const ACCESS_FEE = 50;
+const ACCESS_FEE = 120;
 
 // POST /api/auth/register
-router.post('/register', [
-  body('full_name').trim().notEmpty().withMessage('Full name is required'),
-  body('email').isEmail().withMessage('Valid email is required'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+router.post('/register', authLimiter, [
+  body('full_name').trim().notEmpty().isLength({ max: 100 }).withMessage('Full name is required (max 100 chars)'),
+  body('email').isEmail().isLength({ max: 255 }).withMessage('Valid email is required'),
+  body('password').isLength({ min: 8, max: 128 }).withMessage('Password must be 8-128 characters'),
   body('role').isIn(['student', 'tutor', 'both', 'buyer']).withMessage('Role must be student, tutor, both, or buyer'),
-  body('institution').trim().notEmpty().withMessage('Institution is required'),
+  body('institution').trim().notEmpty().isLength({ max: 200 }).withMessage('Institution is required (max 200 chars)'),
 ], (req, res) => {
   try {
     const errors = validationResult(req);
@@ -47,7 +57,7 @@ router.post('/register', [
     // Non-student emails require access fee payment
     if (!isStudentEmail && !access_fee_reference) {
       return res.status(402).json({
-        error: 'Non-student email detected. A one-time access fee of GHS 50 is required to use SkillBridge.',
+        error: 'Non-student email detected. A one-time access fee of GHS 120 is required to use SkillBridge.',
         requires_payment: true,
         access_fee: ACCESS_FEE,
         account_type: 'external'
@@ -67,7 +77,7 @@ router.post('/register', [
     // Record access fee transaction for non-students
     if (!isStudentEmail) {
       db.prepare(`INSERT INTO transactions (transaction_id, user_id, booking_id, transaction_type, amount, direction, status, payment_reference, created_at)
-        VALUES (?, ?, NULL, 'top_up', ?, 'credit', 'completed', ?, ?)`).run(
+        VALUES (?, ?, NULL, 'access_fee', ?, 'debit', 'completed', ?, ?)`).run(
         uuidv4(), user_id, ACCESS_FEE, access_fee_reference, now
       );
     }
@@ -97,7 +107,7 @@ router.post('/register', [
 });
 
 // POST /api/auth/login
-router.post('/login', [
+router.post('/login', authLimiter, [
   body('email').isEmail().withMessage('Valid email is required'),
   body('password').notEmpty().withMessage('Password is required'),
 ], (req, res) => {

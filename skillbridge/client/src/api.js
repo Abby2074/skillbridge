@@ -55,7 +55,7 @@ export const skillsAPI = {
 
 // ---- Listings ----
 export const listingsAPI = {
-  getAll: () => api.get('/listings'),
+  getAll: (params) => api.get('/listings', { params }),
   getById: (id) => api.get(`/listings/${id}`),
   create: (data) => api.post('/listings', data),
   update: (id, data) => api.put(`/listings/${id}`, data),
@@ -106,6 +106,17 @@ export const adminAPI = {
   getFinancialReport: (params) => api.get('/admin/reports/financial', { params }),
   downloadCSV: (params) => api.get('/admin/reports/financial/csv', { params, responseType: 'blob' }),
   getPartners: () => api.get('/admin/partners'),
+  // CRM
+  getCRMCustomers: (params) => api.get('/admin/crm/customers', { params }),
+  getCRMCustomerDetail: (id) => api.get(`/admin/crm/customers/${id}`),
+  getCRMCommunications: () => api.get('/admin/crm/communications'),
+  getCRMFeedback: () => api.get('/admin/crm/feedback'),
+  // Inventory
+  getFullInventory: () => api.get('/admin/inventory'),
+  // Supply Chain
+  getSupplyChain: () => api.get('/admin/supply-chain'),
+  // Deliveries
+  getDeliveries: (params) => api.get('/admin/deliveries', { params }),
 };
 
 // ---- Invoices ----

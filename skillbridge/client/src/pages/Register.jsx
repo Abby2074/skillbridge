@@ -166,7 +166,7 @@ export default function Register() {
                 <div className="bg-orange-soft rounded-xl p-4 mb-4 border border-orange-brand/10">
                   <div className="flex items-center justify-between">
                     <span className="font-medium">One-Time Access Fee</span>
-                    <span className="font-display font-bold text-xl text-red-brand">GHS 50.00</span>
+                    <span className="font-display font-bold text-xl text-red-brand">GHS 120.00</span>
                   </div>
                 </div>
 
@@ -186,7 +186,7 @@ export default function Register() {
                     Cancel
                   </button>
                   <button onClick={handlePaymentAndContinue} disabled={paymentProcessing} className="flex-1 bg-gradient-to-r from-red-brand to-orange-brand text-white py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50">
-                    {paymentProcessing ? 'Processing...' : 'Pay GHS 50 & Continue'}
+                    {paymentProcessing ? 'Processing...' : 'Pay GHS 120 & Continue'}
                   </button>
                 </div>
               </div>
@@ -238,7 +238,7 @@ export default function Register() {
                   {formData.email && !isStudentEmail && formData.email.includes('@') && (
                     <p className="text-orange-brand text-xs mt-1 flex items-center gap-1">
                       <AlertTriangle className="h-3 w-3" />
-                      Non-student email. A one-time access fee of GHS 50 will be required.
+                      Non-student email. A one-time access fee of GHS 120 will be required.
                     </p>
                   )}
                 </div>
@@ -256,7 +256,40 @@ export default function Register() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Institution</label>
-                  <input type="text" value={formData.institution} onChange={e => updateField('institution', e.target.value)} className="input-field" placeholder="e.g. University of Ghana" />
+                  <select value={formData.institution} onChange={e => updateField('institution', e.target.value)} className="input-field">
+                    <option value="">Select your university</option>
+                    <option value="University of Ghana">University of Ghana</option>
+                    <option value="KNUST">Kwame Nkrumah University of Science and Technology (KNUST)</option>
+                    <option value="University of Cape Coast">University of Cape Coast</option>
+                    <option value="Ashesi University">Ashesi University</option>
+                    <option value="GIMPA">Ghana Institute of Management and Public Administration (GIMPA)</option>
+                    <option value="University of Education, Winneba">University of Education, Winneba</option>
+                    <option value="University for Development Studies">University for Development Studies</option>
+                    <option value="University of Mines and Technology">University of Mines and Technology (UMaT)</option>
+                    <option value="Ghana Communication Technology University">Ghana Communication Technology University (GCTU)</option>
+                    <option value="University of Health and Allied Sciences">University of Health and Allied Sciences (UHAS)</option>
+                    <option value="University of Energy and Natural Resources">University of Energy and Natural Resources (UENR)</option>
+                    <option value="University of Professional Studies, Accra">University of Professional Studies, Accra (UPSA)</option>
+                    <option value="Central University">Central University</option>
+                    <option value="Academic City University College">Academic City University College</option>
+                    <option value="Wisconsin International University College">Wisconsin International University College</option>
+                    <option value="Regent University College of Science and Technology">Regent University College of Science and Technology</option>
+                    <option value="Lancaster University Ghana">Lancaster University Ghana</option>
+                    <option value="Webster University Ghana">Webster University Ghana</option>
+                    <option value="Pentecost University">Pentecost University</option>
+                    <option value="Ghana Telecom University College">Ghana Telecom University College</option>
+                    <option value="Zenith University College">Zenith University College</option>
+                    <option value="Accra Technical University">Accra Technical University</option>
+                    <option value="Kumasi Technical University">Kumasi Technical University</option>
+                    <option value="Takoradi Technical University">Takoradi Technical University</option>
+                    <option value="Cape Coast Technical University">Cape Coast Technical University</option>
+                    <option value="Ho Technical University">Ho Technical University</option>
+                    <option value="Sunyani Technical University">Sunyani Technical University</option>
+                    <option value="Tamale Technical University">Tamale Technical University</option>
+                    <option value="Koforidua Technical University">Koforidua Technical University</option>
+                    <option value="Bolgatanga Technical University">Bolgatanga Technical University</option>
+                    <option value="Other">Other</option>
+                  </select>
                   {errors.institution && <p className="text-danger text-xs mt-1">{errors.institution}</p>}
                 </div>
                 <div className="grid grid-cols-2 gap-4">

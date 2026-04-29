@@ -88,7 +88,7 @@ function initializeDatabase() {
       transaction_id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL REFERENCES users(user_id),
       booking_id TEXT REFERENCES bookings(booking_id),
-      transaction_type TEXT NOT NULL CHECK(transaction_type IN ('top_up','session_payment','commission','tutor_earnings','refund','withdrawal','service_payment','service_escrow','service_earnings','service_commission')),
+      transaction_type TEXT NOT NULL CHECK(transaction_type IN ('top_up','session_payment','commission','tutor_earnings','refund','withdrawal','service_payment','service_escrow','service_earnings','service_commission','access_fee')),
       amount REAL NOT NULL,
       direction TEXT NOT NULL CHECK(direction IN ('credit','debit')),
       status TEXT NOT NULL DEFAULT 'completed' CHECK(status IN ('pending','completed','failed')),
@@ -302,18 +302,18 @@ function seedDatabase() {
 
   // ---- TUTORS ----
   const tutors = [
-    { name: 'Kwame Asante', email: 'kwame@ug.edu.gh', institution: 'University of Ghana', programme: 'Computer Science', year: 3, skill: 'Python Programming', rate: 60, bio: 'Passionate Python developer with 3 years of experience. I specialize in data structures, algorithms, and automation scripts. Love teaching beginners!', sessions: 34, photo: null },
-    { name: 'Abena Mensah', email: 'abena@knust.edu.gh', institution: 'KNUST', programme: 'Communication Design', year: 4, skill: 'Graphic Design (Canva, Adobe Photoshop, Figma)', rate: 45, bio: 'Creative graphic designer experienced in brand identity, social media graphics, and UI design. I make complex design concepts simple and fun.', sessions: 51, photo: null },
-    { name: 'Kofi Boateng', email: 'kofi@ashesi.edu.gh', institution: 'Ashesi University', programme: 'Computer Science', year: 3, skill: 'Web Development (HTML, CSS, JavaScript)', rate: 70, bio: 'Full-stack web developer who has built multiple production websites. I teach HTML, CSS, JavaScript, and React from scratch.', sessions: 28, photo: null },
-    { name: 'Ama Owusu', email: 'ama@ucc.edu.gh', institution: 'University of Cape Coast', programme: 'Statistics', year: 2, skill: 'Data Analysis (Microsoft Excel, Power BI, Google Sheets)', rate: 55, bio: 'Data enthusiast skilled in Excel, Power BI dashboards, and Google Sheets automation. I help students ace their data assignments.', sessions: 19, photo: null },
-    { name: 'Yaw Darko', email: 'yaw@gimpa.edu.gh', institution: 'GIMPA', programme: 'Information Technology', year: 4, skill: 'Cybersecurity Fundamentals', rate: 80, bio: 'Certified in CompTIA Security+. I teach network security, ethical hacking basics, and cybersecurity frameworks in an easy-to-understand way.', sessions: 22, photo: null },
-    { name: 'Efua Adjei', email: 'efua@knust.edu.gh', institution: 'KNUST', programme: 'Fine Art', year: 3, skill: 'Photography Editing (Adobe Lightroom, Adobe Photoshop)', rate: 40, bio: 'Professional photographer and editor. I teach color grading, retouching, and creative editing techniques using Lightroom and Photoshop.', sessions: 15, photo: null },
-    { name: 'Nana Osei', email: 'nana@ashesi.edu.gh', institution: 'Ashesi University', programme: 'Computer Engineering', year: 4, skill: 'Mobile Application Development', rate: 75, bio: 'Mobile app developer with published apps on Google Play. I teach React Native and Flutter for cross-platform development.', sessions: 30, photo: null },
-    { name: 'Akosua Frimpong', email: 'akosua@ug.edu.gh', institution: 'University of Ghana', programme: 'Information Studies', year: 3, skill: 'Database Design and SQL', rate: 65, bio: 'Database specialist experienced in MySQL, PostgreSQL, and SQLite. I teach relational database design, normalization, and complex SQL queries.', sessions: 24, photo: null },
-    { name: 'Priscilla Agyemang', email: 'priscilla@ashesi.edu.gh', institution: 'Ashesi University', programme: 'Computer Science', year: 4, skill: 'Python Programming', rate: 55, bio: 'Python enthusiast with experience in Django, Flask, and data science libraries. I also teach web development with JavaScript and React. I love helping students build real projects!', sessions: 38, photo: null, extraSkills: ['Web Development (HTML, CSS, JavaScript)'] },
-    { name: 'Samuel Adu-Gyamfi', email: 'samuel@ug.edu.gh', institution: 'University of Ghana', programme: 'Computer Engineering', year: 3, skill: 'Mobile Application Development', rate: 70, bio: 'Mobile and web developer with published apps on the Play Store. I teach Flutter, React Native, and also full-stack JavaScript development.', sessions: 27, photo: null, extraSkills: ['Web Development (HTML, CSS, JavaScript)', 'Database Design and SQL'] },
-    { name: 'Mercy Tetteh', email: 'mercy@knust.edu.gh', institution: 'KNUST', programme: 'Multimedia Art', year: 4, skill: 'Graphic Design (Canva, Adobe Photoshop, Figma)', rate: 50, bio: 'Award-winning graphic designer and video editor. I teach everything from branding to motion graphics. My students leave with portfolio-ready work.', sessions: 42, photo: null, extraSkills: ['Video Editing (Adobe Premiere Pro, CapCut)', 'Photography Editing (Adobe Lightroom, Adobe Photoshop)'] },
-    { name: 'Isaac Quaye', email: 'isaac@gimpa.edu.gh', institution: 'GIMPA', programme: 'Information Technology', year: 3, skill: 'Cybersecurity Fundamentals', rate: 85, bio: 'Cybersecurity specialist and data analyst. I teach network security, ethical hacking, and also advanced data analysis with Excel, Power BI, and Python.', sessions: 31, photo: null, extraSkills: ['Data Analysis (Microsoft Excel, Power BI, Google Sheets)', 'Python Programming'] },
+    { name: 'Kobena Adjei', email: 'kobena@ug.edu.gh', institution: 'University of Ghana', programme: 'Computer Science', year: 3, skill: 'Python Programming', rate: 60, bio: 'Passionate Python developer with 3 years of experience. I specialize in data structures, algorithms, and automation scripts. Love teaching beginners!', sessions: 34, photo: null },
+    { name: 'Efanam Amedzro', email: 'efanam@knust.edu.gh', institution: 'KNUST', programme: 'Communication Design', year: 4, skill: 'Graphic Design (Canva, Adobe Photoshop, Figma)', rate: 45, bio: 'Creative graphic designer experienced in brand identity, social media graphics, and UI design. I make complex design concepts simple and fun.', sessions: 51, photo: null },
+    { name: 'Kojo Lamptey', email: 'kojo@ashesi.edu.gh', institution: 'Ashesi University', programme: 'Computer Science', year: 3, skill: 'Web Development (HTML, CSS, JavaScript)', rate: 70, bio: 'Full-stack web developer who has built multiple production websites. I teach HTML, CSS, JavaScript, and React from scratch.', sessions: 28, photo: null },
+    { name: 'Afia Asante', email: 'afia@ucc.edu.gh', institution: 'University of Cape Coast', programme: 'Statistics', year: 2, skill: 'Data Analysis (Microsoft Excel, Power BI, Google Sheets)', rate: 55, bio: 'Data enthusiast skilled in Excel, Power BI dashboards, and Google Sheets automation. I help students ace their data assignments.', sessions: 19, photo: null },
+    { name: 'Wunpini Dawuni', email: 'wunpini@gimpa.edu.gh', institution: 'GIMPA', programme: 'Information Technology', year: 4, skill: 'Cybersecurity Fundamentals', rate: 80, bio: 'Certified in CompTIA Security+. I teach network security, ethical hacking basics, and cybersecurity frameworks in an easy-to-understand way.', sessions: 22, photo: null },
+    { name: 'Ekua Gyan', email: 'ekua@knust.edu.gh', institution: 'KNUST', programme: 'Fine Art', year: 3, skill: 'Photography Editing (Adobe Lightroom, Adobe Photoshop)', rate: 40, bio: 'Professional photographer and editor. I teach color grading, retouching, and creative editing techniques using Lightroom and Photoshop.', sessions: 15, photo: null },
+    { name: 'Yao Quartey', email: 'yao@ashesi.edu.gh', institution: 'Ashesi University', programme: 'Computer Engineering', year: 4, skill: 'Mobile Application Development', rate: 75, bio: 'Mobile app developer with published apps on Google Play. I teach React Native and Flutter for cross-platform development.', sessions: 30, photo: null },
+    { name: 'Abena Yeboah', email: 'abena@ug.edu.gh', institution: 'University of Ghana', programme: 'Information Studies', year: 3, skill: 'Database Design and SQL', rate: 65, bio: 'Database specialist experienced in MySQL, PostgreSQL, and SQLite. I teach relational database design, normalization, and complex SQL queries.', sessions: 24, photo: null },
+    { name: 'Naomi Agyemang', email: 'naomi@ashesi.edu.gh', institution: 'Ashesi University', programme: 'Computer Science', year: 4, skill: 'Python Programming', rate: 55, bio: 'Python enthusiast with experience in Django, Flask, and data science libraries. I also teach web development with JavaScript and React. I love helping students build real projects!', sessions: 38, photo: null, extraSkills: ['Web Development (HTML, CSS, JavaScript)'] },
+    { name: 'Kwadwo Adu-Gyamfi', email: 'kwadwo@ug.edu.gh', institution: 'University of Ghana', programme: 'Computer Engineering', year: 3, skill: 'Mobile Application Development', rate: 70, bio: 'Mobile and web developer with published apps on the Play Store. I teach Flutter, React Native, and also full-stack JavaScript development.', sessions: 27, photo: null, extraSkills: ['Web Development (HTML, CSS, JavaScript)', 'Database Design and SQL'] },
+    { name: 'Dagbe Tetteh', email: 'dagbe@knust.edu.gh', institution: 'KNUST', programme: 'Multimedia Art', year: 4, skill: 'Graphic Design (Canva, Adobe Photoshop, Figma)', rate: 50, bio: 'Award-winning graphic designer and video editor. I teach everything from branding to motion graphics. My students leave with portfolio-ready work.', sessions: 42, photo: null, extraSkills: ['Video Editing (Adobe Premiere Pro, CapCut)', 'Photography Editing (Adobe Lightroom, Adobe Photoshop)'] },
+    { name: 'Azma Mahama', email: 'azma@gimpa.edu.gh', institution: 'GIMPA', programme: 'Information Technology', year: 3, skill: 'Cybersecurity Fundamentals', rate: 85, bio: 'Cybersecurity specialist and data analyst. I teach network security, ethical hacking, and also advanced data analysis with Excel, Power BI, and Python.', sessions: 31, photo: null, extraSkills: ['Data Analysis (Microsoft Excel, Power BI, Google Sheets)', 'Python Programming'] },
   ];
 
   const insertUser = db.prepare(`INSERT INTO users (user_id, full_name, email, password_hash, role, is_student, institution, programme, year_of_study, bio, profile_photo_url, wallet_balance, earnings_balance, is_verified, is_active, is_admin, created_at)
@@ -359,15 +359,15 @@ function seedDatabase() {
 
   // ---- STUDENTS ----
   const students = [
-    { name: 'Emmanuel Tetteh', email: 'emmanuel@ug.edu.gh', institution: 'University of Ghana', programme: 'Business Administration', year: 2, wallet: 120.00 },
-    { name: 'Adwoa Boadu', email: 'adwoa@knust.edu.gh', institution: 'KNUST', programme: 'Electrical Engineering', year: 1, wallet: 85.00 },
-    { name: 'Kweku Mensah', email: 'kweku@ashesi.edu.gh', institution: 'Ashesi University', programme: 'Management Information Systems', year: 3, wallet: 200.00 },
-    { name: 'Fatima Issah', email: 'fatima@ucc.edu.gh', institution: 'University of Cape Coast', programme: 'Education', year: 2, wallet: 50.00 },
-    { name: 'Daniel Asare', email: 'daniel@gimpa.edu.gh', institution: 'GIMPA', programme: 'Marketing', year: 1, wallet: 0.00 },
-    { name: 'Selina Ocansey', email: 'selina@ug.edu.gh', institution: 'University of Ghana', programme: 'Information Technology', year: 2, wallet: 150.00 },
-    { name: 'Benjamin Appiah', email: 'benjamin@ashesi.edu.gh', institution: 'Ashesi University', programme: 'Engineering', year: 1, wallet: 75.00 },
-    { name: 'Rita Mensah', email: 'rita@knust.edu.gh', institution: 'KNUST', programme: 'Computer Science', year: 3, wallet: 220.00 },
-    { name: 'Michael Ofori', email: 'michael@ucc.edu.gh', institution: 'University of Cape Coast', programme: 'Mathematics', year: 2, wallet: 40.00 },
+    { name: 'Kwamina Koomson', email: 'kwamina@ug.edu.gh', institution: 'University of Ghana', programme: 'Business Administration', year: 2, wallet: 120.00 },
+    { name: 'Pagnaa Ziblim', email: 'pagnaa@knust.edu.gh', institution: 'KNUST', programme: 'Electrical Engineering', year: 1, wallet: 85.00 },
+    { name: 'Kweku Osei', email: 'kweku@ashesi.edu.gh', institution: 'Ashesi University', programme: 'Management Information Systems', year: 3, wallet: 200.00 },
+    { name: 'Nasara Alheri', email: 'nasara@ucc.edu.gh', institution: 'University of Cape Coast', programme: 'Education', year: 2, wallet: 50.00 },
+    { name: 'Agbeko Gbeho', email: 'agbeko@gimpa.edu.gh', institution: 'GIMPA', programme: 'Marketing', year: 1, wallet: 0.00 },
+    { name: 'Ajua Nii-Lante', email: 'ajua@ug.edu.gh', institution: 'University of Ghana', programme: 'Information Technology', year: 2, wallet: 150.00 },
+    { name: 'Kudzo Amegah', email: 'kudzo@ashesi.edu.gh', institution: 'Ashesi University', programme: 'Engineering', year: 1, wallet: 75.00 },
+    { name: 'Akua Amarteifio', email: 'akua@knust.edu.gh', institution: 'KNUST', programme: 'Computer Science', year: 3, wallet: 220.00 },
+    { name: 'Jilima Suhuyini', email: 'jilima@ucc.edu.gh', institution: 'University of Cape Coast', programme: 'Mathematics', year: 2, wallet: 40.00 },
   ];
 
   const studentIds = [];
@@ -493,6 +493,108 @@ function seedDatabase() {
 
   for (const req of sampleRequests) {
     insertServiceRequest.run(uuidv4(), studentIds[req.studentIdx], categoryIds[req.cat], req.title, req.desc, req.min, req.max, req.deadline, now, now);
+  }
+
+  // ---- SAMPLE SERVICE ORDERS (completed with reviews) ----
+  const gigIds = db.prepare('SELECT gig_id, freelancer_id, min_price, title FROM service_gigs').all();
+  const insertServiceOrder = db.prepare(`INSERT INTO service_orders (order_id, gig_id, request_id, buyer_id, freelancer_id, agreed_price, platform_commission, freelancer_earnings, description, status, escrow_status, buyer_confirmed, freelancer_confirmed, created_at, delivered_at, completed_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+  const insertServiceReview = db.prepare(`INSERT INTO service_reviews (review_id, order_id, reviewer_id, reviewee_id, star_rating, review_text, is_flagged, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, 0, ?)`);
+  const insertServiceMessage = db.prepare(`INSERT INTO service_messages (message_id, sender_id, receiver_id, gig_id, request_id, order_id, message_text, sent_at, is_read)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`);
+
+  const serviceReviewTexts = [
+    'Delivered exactly what I asked for. Very professional and fast!',
+    'Great work! The quality exceeded my expectations. Will hire again.',
+    'Solid freelancer. Communication was clear and delivery was on time.',
+    'Fantastic job! Very creative and responsive to feedback.',
+    'Good work overall. Minor revisions needed but handled quickly.',
+    'Absolutely brilliant! Went above and beyond what I expected.',
+  ];
+
+  const serviceOrderDates = ['2026-02-10', '2026-02-18', '2026-03-01', '2026-03-10', '2026-03-15', '2026-03-22'];
+
+  for (let i = 0; i < Math.min(gigIds.length, 6); i++) {
+    const gig = gigIds[i];
+    const buyerIdx = i % studentIds.length;
+    const price = gig.min_price + (i * 20);
+    const commission = price * 0.10;
+    const earnings = price * 0.90;
+    const orderId = uuidv4();
+    const orderDate = serviceOrderDates[i];
+
+    // Completed order
+    insertServiceOrder.run(
+      orderId, gig.gig_id, null, studentIds[buyerIdx], gig.freelancer_id,
+      price, commission, earnings,
+      `I need ${gig.title.toLowerCase()} for my university project.`,
+      i < 4 ? 'completed' : (i === 4 ? 'delivered' : 'in_progress'),
+      i < 4 ? 'released' : 'held',
+      i < 4 ? 1 : 0, i < 5 ? 1 : 0,
+      orderDate + 'T09:00:00Z',
+      i < 5 ? orderDate + 'T18:00:00Z' : null,
+      i < 4 ? orderDate + 'T20:00:00Z' : null
+    );
+
+    // Transactions for completed orders
+    if (i < 4) {
+      insertTransaction.run(uuidv4(), studentIds[buyerIdx], null, 'service_payment', price, 'debit', 'completed', `SVC-${orderId.slice(0, 8)}`, orderDate + 'T09:00:00Z');
+      insertTransaction.run(uuidv4(), gig.freelancer_id, null, 'service_earnings', earnings, 'credit', 'completed', `SVCERN-${orderId.slice(0, 8)}`, orderDate + 'T20:00:00Z');
+      insertTransaction.run(uuidv4(), adminId, null, 'service_commission', commission, 'credit', 'completed', `SVCCOM-${orderId.slice(0, 8)}`, orderDate + 'T20:00:00Z');
+    }
+
+    // Reviews for completed orders (buyer reviews freelancer)
+    if (i < 4) {
+      const stars = [5, 4, 5, 5][i];
+      insertServiceReview.run(uuidv4(), orderId, studentIds[buyerIdx], gig.freelancer_id, stars, serviceReviewTexts[i], orderDate + 'T21:00:00Z');
+      // Freelancer reviews buyer
+      insertServiceReview.run(uuidv4(), orderId, gig.freelancer_id, studentIds[buyerIdx], [5, 5, 4, 5][i],
+        ['Great client! Clear instructions and quick payment.', 'Easy to work with. Would collaborate again.', 'Good communication throughout the project.', 'Wonderful client. Appreciated my work!'][i],
+        orderDate + 'T22:00:00Z');
+    }
+
+    // Service messages for all orders
+    insertServiceMessage.run(uuidv4(), studentIds[buyerIdx], gig.freelancer_id, gig.gig_id, null, orderId,
+      `Hi! I'm interested in your "${gig.title}" service. Can you help me with my project?`, orderDate + 'T08:00:00Z');
+    insertServiceMessage.run(uuidv4(), gig.freelancer_id, studentIds[buyerIdx], gig.gig_id, null, orderId,
+      `Hello! Yes, I'd be happy to help. Can you share more details about what you need?`, orderDate + 'T08:30:00Z');
+    insertServiceMessage.run(uuidv4(), studentIds[buyerIdx], gig.freelancer_id, gig.gig_id, null, orderId,
+      `Great! I'll place the order now. Looking forward to working with you.`, orderDate + 'T08:45:00Z');
+  }
+
+  // ---- SAMPLE SUPPORT TICKETS ----
+  const insertTicket = db.prepare(`INSERT INTO support_tickets (ticket_id, name, email, subject, message, created_at) VALUES (?, ?, ?, ?, ?, ?)`);
+
+  const sampleTickets = [
+    { name: 'Kwamina Koomson', email: 'kwamina@ug.edu.gh', subject: 'Wallet top-up not reflecting', message: 'I topped up GHS 50 via MTN MoMo about 2 hours ago but the balance has not been updated. Transaction reference: TOPUP-2026-03-01. Please help.' },
+    { name: 'Pagnaa Ziblim', email: 'pagnaa@knust.edu.gh', subject: 'Cannot book a tutoring session', message: 'When I try to book a session with Kojo Lamptey, I get an error saying insufficient balance, but I have GHS 85 in my wallet and the session costs GHS 70.' },
+    { name: 'Kweku Osei', email: 'kweku@ashesi.edu.gh', subject: 'Request for refund on cancelled session', message: 'My tutor cancelled the session last minute but the GHS 80 has not been refunded to my wallet. Booking ID was for Python Programming on March 5.' },
+    { name: 'Kobena Adjei', email: 'kobena@ug.edu.gh', subject: 'How to become a freelancer?', message: 'I am already registered as a tutor. How can I also offer freelance services on the marketplace? Do I need a separate account?' },
+    { name: 'Nasara Alheri', email: 'nasara@ucc.edu.gh', subject: 'Report inappropriate review', message: 'A student left a review on my friend\'s profile that contains offensive language. Review was posted on March 3rd for a Graphic Design session. Please review and remove it.' },
+    { name: 'Akua Amarteifio', email: 'akua@knust.edu.gh', subject: 'Feature request: Group tutoring sessions', message: 'It would be great if SkillBridge could support group tutoring sessions where multiple students can join and split the cost. Is this something being considered?' },
+  ];
+
+  const ticketDates = ['2026-03-01', '2026-03-05', '2026-03-08', '2026-03-12', '2026-03-18', '2026-03-25'];
+  for (let i = 0; i < sampleTickets.length; i++) {
+    const t = sampleTickets[i];
+    insertTicket.run(uuidv4(), t.name, t.email, t.subject, t.message, ticketDates[i] + 'T10:00:00Z');
+  }
+
+  // ---- ADDITIONAL SESSION MESSAGES ----
+  const insertMessage = db.prepare(`INSERT INTO messages (message_id, booking_id, sender_id, message_text, sent_at) VALUES (?, ?, ?, ?, ?)`);
+  const completedBookings = db.prepare("SELECT booking_id, student_id, tutor_id FROM bookings WHERE status IN ('completed','rated') LIMIT 5").all();
+
+  const sessionMsgTexts = [
+    ['Hi! Looking forward to our session. Should I prepare anything?', 'Yes, please review chapters 3-4 before we meet. See you soon!'],
+    ['Thanks for the session! Can we go over loops next time?', 'Of course! I\'ll prepare some exercises on loops and iteration for you.'],
+    ['I really appreciated how you explained recursion. It finally clicked!', 'Glad to hear that! Feel free to reach out if you have more questions.'],
+  ];
+
+  for (let i = 0; i < Math.min(completedBookings.length, 3); i++) {
+    const b = completedBookings[i];
+    insertMessage.run(uuidv4(), b.booking_id, b.student_id, sessionMsgTexts[i][0], '2026-03-0' + (i + 1) + 'T09:00:00Z');
+    insertMessage.run(uuidv4(), b.booking_id, b.tutor_id, sessionMsgTexts[i][1], '2026-03-0' + (i + 1) + 'T09:30:00Z');
   }
 
   console.log('Database seeded successfully!');

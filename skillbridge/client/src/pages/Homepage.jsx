@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { usersAPI, skillsAPI } from '../api';
+import { usersAPI, skillsAPI, gigsAPI } from '../api';
 import TutorCard from '../components/TutorCard';
 import Loader from '../components/Loader';
-import { ArrowRight, Search, Calendar, CreditCard, GraduationCap, Code, BarChart3, Palette, Database, Shield, Smartphone, Camera, Film, Star, Flame, Zap, TrendingUp } from 'lucide-react';
+import { ArrowRight, Search, Calendar, CreditCard, GraduationCap, Code, BarChart3, Palette, Database, Shield, Smartphone, Camera, Film, Star, Flame, Zap, TrendingUp, Briefcase, ShoppingCart, Clock, Package, MessageSquare, CheckCircle } from 'lucide-react';
 
 const SKILL_ICONS = {
   'Python Programming': Code,
@@ -21,11 +21,13 @@ export default function Homepage() {
   const { data: stats } = useQuery({ queryKey: ['stats'], queryFn: () => usersAPI.getStats().then(r => r.data) });
   const { data: tutors, isLoading } = useQuery({ queryKey: ['featured-tutors'], queryFn: () => usersAPI.getTutors({ sort: 'rating' }).then(r => r.data) });
   const { data: skills } = useQuery({ queryKey: ['skills'], queryFn: () => skillsAPI.getAll().then(r => r.data) });
+  const { data: gigs } = useQuery({ queryKey: ['featured-gigs'], queryFn: () => gigsAPI.getAll({ sort: 'rating' }).then(r => r.data) });
 
   const testimonials = [
-    { name: 'Ama K.', text: 'SkillBridge helped me ace my Python exam! My tutor was incredibly patient and knowledgeable.', rating: 5, institution: 'University of Ghana' },
-    { name: 'Kofi M.', text: 'I went from zero to building my first website in just 3 sessions. Best investment I made this semester.', rating: 5, institution: 'KNUST' },
-    { name: 'Efua D.', text: 'The platform is so easy to use and the tutors are all students who actually understand your struggles.', rating: 5, institution: 'Ashesi University' },
+    { name: 'Ajua N.', text: 'SkillBridge helped me ace my Python exam! My tutor was incredibly patient and knowledgeable.', rating: 5, institution: 'University of Ghana' },
+    { name: 'Kudzo A.', text: 'I hired a freelancer to build my portfolio website and it was delivered in 3 days. Amazing quality for the price!', rating: 5, institution: 'KNUST' },
+    { name: 'Pagnaa Z.', text: 'The platform is so easy to use. I went from zero to building my first app in just 3 tutoring sessions.', rating: 5, institution: 'Ashesi University' },
+    { name: 'Kwamina K.', text: 'I posted a service request for logo design and got 4 applications within a day. The escrow system made me feel safe paying.', rating: 5, institution: 'University of Cape Coast' },
   ];
 
   return (
@@ -47,17 +49,17 @@ export default function Homepage() {
               <span>Trusted by students across Ghana</span>
             </div>
             <h1 className="font-display font-bold text-4xl sm:text-5xl lg:text-6xl leading-tight text-white">
-              Find a Peer Tutor for <span className="text-orange-light">Any Tech Skill</span>
+              Learn, Hire & Sell <span className="text-orange-light">Tech Skills</span>
             </h1>
             <p className="text-lg text-white/80 mt-6 max-w-2xl">
-              Connect with fellow students who excel in tech skills. Book one-on-one tutoring sessions, learn at your pace, and pay securely with your digital wallet.
+              Ghana's student-powered marketplace for tutoring sessions and freelance services. Book a tutor, hire a freelancer, or sell your own skills — all with secure payments.
             </p>
             <div className="flex flex-wrap gap-4 mt-8">
               <Link to="/browse" className="bg-white text-red-brand inline-flex items-center gap-2 text-lg px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-lg">
                 Browse Tutors <ArrowRight className="h-5 w-5" />
               </Link>
-              <Link to="/register" className="bg-white/10 backdrop-blur-sm text-white px-8 py-3 rounded-lg font-medium hover:bg-white/20 transition-colors text-lg border border-white/20">
-                Become a Tutor
+              <Link to="/marketplace" className="bg-white/10 backdrop-blur-sm text-white px-8 py-3 rounded-lg font-medium hover:bg-white/20 transition-colors text-lg border border-white/20 inline-flex items-center gap-2">
+                <Briefcase className="h-5 w-5" /> Hire a Freelancer
               </Link>
             </div>
           </div>
@@ -67,14 +69,18 @@ export default function Homepage() {
       {/* Stats Counter */}
       <section className="bg-white border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-          <div className="grid grid-cols-3 gap-8 text-center">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
             <div>
               <p className="font-display font-bold text-3xl sm:text-4xl text-red-brand">{stats?.tutors || 0}+</p>
-              <p className="text-text-muted mt-1">Active Tutors</p>
+              <p className="text-text-muted mt-1">Tutors & Freelancers</p>
             </div>
             <div>
               <p className="font-display font-bold text-3xl sm:text-4xl text-orange-brand">{stats?.sessions || 0}+</p>
               <p className="text-text-muted mt-1">Sessions Completed</p>
+            </div>
+            <div>
+              <p className="font-display font-bold text-3xl sm:text-4xl text-primary">{gigs?.length || 0}+</p>
+              <p className="text-text-muted mt-1">Services Available</p>
             </div>
             <div>
               <p className="font-display font-bold text-3xl sm:text-4xl text-red-brand">{stats?.students || 0}+</p>
@@ -92,28 +98,34 @@ export default function Homepage() {
               <div className="inline-flex items-center gap-2 text-red-brand font-medium text-sm mb-3">
                 <Zap className="h-4 w-4" /> Why SkillBridge?
               </div>
-              <h2 className="font-display font-bold text-3xl text-text-main">Learn From Students Who <span className="text-red-brand">Get It</span></h2>
+              <h2 className="font-display font-bold text-3xl text-text-main">Your Campus <span className="text-red-brand">Marketplace</span></h2>
               <p className="text-text-muted mt-3 leading-relaxed">
-                Traditional tutoring can feel intimidating. SkillBridge connects you with peer tutors who recently mastered the same courses you're taking. They understand your struggles and speak your language.
+                SkillBridge is more than tutoring — it's a full e-business platform where students learn, earn, and grow. Book tutors, hire freelancers, or sell your own skills to fellow students across Ghana.
               </p>
               <div className="flex flex-col gap-3 mt-6">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-red-brand/10 flex items-center justify-center">
-                    <TrendingUp className="h-4 w-4 text-red-brand" />
+                    <GraduationCap className="h-4 w-4 text-red-brand" />
                   </div>
-                  <span className="text-sm font-medium text-text-main">Affordable rates set by student tutors</span>
+                  <span className="text-sm font-medium text-text-main">Book 1-on-1 tutoring sessions in 9+ tech skills</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center">
+                    <Briefcase className="h-4 w-4 text-accent" />
+                  </div>
+                  <span className="text-sm font-medium text-text-main">Hire student freelancers for web, design, data & more</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-orange-brand/10 flex items-center justify-center">
-                    <Calendar className="h-4 w-4 text-orange-brand" />
+                    <ShoppingCart className="h-4 w-4 text-orange-brand" />
                   </div>
-                  <span className="text-sm font-medium text-text-main">Flexible scheduling around your classes</span>
+                  <span className="text-sm font-medium text-text-main">Cart, checkout & escrow payments for safe transactions</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                     <Shield className="h-4 w-4 text-primary" />
                   </div>
-                  <span className="text-sm font-medium text-text-main">Secure wallet payments with full refund policy</span>
+                  <span className="text-sm font-medium text-text-main">Institution-verified users you can trust</span>
                 </div>
               </div>
             </div>
@@ -203,52 +215,134 @@ export default function Homepage() {
         </div>
       </section>
 
-      {/* Service Marketplace CTA */}
+      {/* Featured Services / Marketplace */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="bg-gradient-to-r from-sidebar to-primary rounded-2xl p-8 lg:p-12 text-white">
-          <div className="max-w-2xl">
-            <h2 className="font-display font-bold text-3xl">Need a Project Done?</h2>
-            <p className="text-white/80 mt-3 text-lg">
-              Beyond tutoring, our student freelancers can build your website, design your logo, edit your videos, and more. Hire talented students at affordable rates.
-            </p>
-            <div className="flex flex-wrap gap-4 mt-6">
+        <div className="flex items-center justify-between mb-10">
+          <div>
+            <h2 className="font-display font-bold text-3xl text-text-main">Freelance <span className="text-accent">Services</span></h2>
+            <p className="text-text-muted mt-2">Hire skilled student freelancers for your projects</p>
+          </div>
+          <Link to="/marketplace" className="hidden sm:inline-flex items-center gap-1 text-accent font-medium hover:underline">
+            View all <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {gigs?.slice(0, 6).map(gig => (
+            <Link key={gig.gig_id} to={`/gig/${gig.gig_id}`} className="card hover:shadow-md hover:border-accent/20 transition-all group">
+              <div className="flex items-start justify-between mb-3">
+                <span className="text-xs px-2 py-1 bg-accent/10 text-accent rounded-full">{gig.category_name}</span>
+                {gig.avg_rating && (
+                  <span className="flex items-center gap-1 text-sm text-accent">
+                    <Star className="h-3.5 w-3.5 fill-accent" /> {gig.avg_rating}
+                  </span>
+                )}
+              </div>
+              <h3 className="font-display font-semibold text-text-main group-hover:text-accent transition-colors mb-2">{gig.title}</h3>
+              <p className="text-text-muted text-sm line-clamp-2 mb-4">{gig.description}</p>
+              <div className="flex items-center justify-between pt-3 border-t border-border">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 bg-accent/10 rounded-full flex items-center justify-center text-accent text-xs font-bold">
+                    {gig.freelancer_name?.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{gig.freelancer_name}</p>
+                    <p className="text-xs text-text-muted">{gig.institution}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold text-accent text-sm">GHS {Number(gig.min_price).toFixed(0)} - {Number(gig.max_price).toFixed(0)}</p>
+                  {gig.delivery_time && (
+                    <p className="text-xs text-text-muted flex items-center gap-1 justify-end"><Clock className="h-3 w-3" /> {gig.delivery_time}</p>
+                  )}
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        {/* Marketplace CTA */}
+        <div className="mt-10 bg-gradient-to-r from-sidebar to-primary rounded-2xl p-8 lg:p-10 text-white">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
+            <div className="flex-1">
+              <h3 className="font-display font-bold text-2xl">Need something specific?</h3>
+              <p className="text-white/80 mt-2">Post a service request and let freelancers come to you with proposals. Pay only when you're satisfied, with full escrow protection.</p>
+            </div>
+            <div className="flex flex-wrap gap-3">
               <Link to="/marketplace" className="btn-accent inline-flex items-center gap-2">
-                Browse Services <ArrowRight className="h-4 w-4" />
+                <ShoppingCart className="h-4 w-4" /> Browse Services
               </Link>
-              <Link to="/service-requests" className="bg-white/10 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-white/20 transition-colors">
-                Post a Request
+              <Link to="/service-requests" className="bg-white/10 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-white/20 transition-colors inline-flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" /> Post a Request
               </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* How it Works */}
+      {/* How it Works — Two Flows */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-orange-soft via-white to-red-50/30" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center mb-12">
             <h2 className="font-display font-bold text-3xl text-text-main">How It <span className="text-red-brand">Works</span></h2>
-            <p className="text-text-muted mt-2">Get started in 4 simple steps</p>
+            <p className="text-text-muted mt-2">Two ways to use SkillBridge</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              { step: 1, icon: Search, title: 'Browse', desc: 'Search and filter tutors by skill, price, and rating', color: 'text-primary', bg: 'bg-primary/10' },
-              { step: 2, icon: Calendar, title: 'Book', desc: 'Pick an available time slot and book your session', color: 'text-orange-brand', bg: 'bg-orange-brand/10' },
-              { step: 3, icon: CreditCard, title: 'Pay', desc: 'Pay securely from your digital wallet', color: 'text-red-brand', bg: 'bg-red-brand/10' },
-              { step: 4, icon: GraduationCap, title: 'Learn', desc: 'Join your session and master the skill', color: 'text-accent', bg: 'bg-accent/10' },
-            ].map(item => (
-              <div key={item.step} className="text-center">
-                <div className={`w-16 h-16 ${item.bg} rounded-2xl flex items-center justify-center mx-auto mb-4`}>
-                  <item.icon className={`h-8 w-8 ${item.color}`} />
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            {/* Tutoring Flow */}
+            <div className="card border-2 border-primary/10">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+                  <GraduationCap className="h-5 w-5 text-primary" />
                 </div>
-                <div className="w-8 h-8 bg-gradient-to-r from-red-brand to-orange-brand rounded-full flex items-center justify-center mx-auto mb-3 text-white font-bold text-sm">
-                  {item.step}
-                </div>
-                <h3 className="font-display font-semibold text-lg">{item.title}</h3>
-                <p className="text-text-muted text-sm mt-1">{item.desc}</p>
+                <h3 className="font-display font-bold text-xl text-primary">Book a Tutor</h3>
               </div>
-            ))}
+              <div className="space-y-4">
+                {[
+                  { step: 1, icon: Search, title: 'Browse Tutors', desc: 'Search by skill, price, and rating' },
+                  { step: 2, icon: Calendar, title: 'Pick a Time Slot', desc: 'Choose from available schedules' },
+                  { step: 3, icon: CreditCard, title: 'Pay via Wallet', desc: 'Secure payment from your digital wallet' },
+                  { step: 4, icon: GraduationCap, title: 'Learn & Review', desc: 'Attend session, then leave a review' },
+                ].map(item => (
+                  <div key={item.step} className="flex items-start gap-4">
+                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">{item.step}</div>
+                    <div>
+                      <h4 className="font-semibold text-sm">{item.title}</h4>
+                      <p className="text-text-muted text-xs">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Link to="/browse" className="btn-outline w-full text-center mt-6 flex items-center justify-center gap-2">Browse Tutors <ArrowRight className="h-4 w-4" /></Link>
+            </div>
+
+            {/* Service Flow */}
+            <div className="card border-2 border-accent/10">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-accent/10 rounded-xl flex items-center justify-center">
+                  <Briefcase className="h-5 w-5 text-accent" />
+                </div>
+                <h3 className="font-display font-bold text-xl text-accent">Hire a Freelancer</h3>
+              </div>
+              <div className="space-y-4">
+                {[
+                  { step: 1, icon: Search, title: 'Browse Services', desc: 'Find gigs or post a service request' },
+                  { step: 2, icon: ShoppingCart, title: 'Add to Cart & Checkout', desc: 'Add services to cart, pay at checkout' },
+                  { step: 3, icon: Package, title: 'Escrow & Delivery', desc: 'Funds held in escrow until delivery' },
+                  { step: 4, icon: CheckCircle, title: 'Confirm & Review', desc: 'Confirm delivery, funds released to freelancer' },
+                ].map(item => (
+                  <div key={item.step} className="flex items-start gap-4">
+                    <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">{item.step}</div>
+                    <div>
+                      <h4 className="font-semibold text-sm">{item.title}</h4>
+                      <p className="text-text-muted text-xs">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Link to="/marketplace" className="btn-accent w-full text-center mt-6 flex items-center justify-center gap-2">Browse Services <ArrowRight className="h-4 w-4" /></Link>
+            </div>
           </div>
         </div>
       </section>
@@ -328,14 +422,17 @@ export default function Homepage() {
           <div className="absolute inset-0 bg-gradient-to-r from-red-brand/90 via-orange-brand/85 to-accent/80" />
         </div>
         <div className="relative max-w-4xl mx-auto px-4 text-center text-white py-20">
-          <h2 className="font-display font-bold text-3xl sm:text-4xl">Ready to Start Learning?</h2>
-          <p className="text-white/80 mt-3 text-lg">Join hundreds of students already improving their tech skills with SkillBridge</p>
+          <h2 className="font-display font-bold text-3xl sm:text-4xl">Ready to Learn or Earn?</h2>
+          <p className="text-white/80 mt-3 text-lg">Join students across Ghana — book a tutor, hire a freelancer, or start selling your skills today</p>
           <div className="flex flex-wrap justify-center gap-4 mt-8">
             <Link to="/register" className="bg-white text-red-brand px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors shadow-lg">
               Get Started Free
             </Link>
             <Link to="/browse" className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white/10 transition-colors">
               Browse Tutors
+            </Link>
+            <Link to="/marketplace" className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white/10 transition-colors inline-flex items-center gap-2">
+              <Briefcase className="h-4 w-4" /> Hire Freelancers
             </Link>
           </div>
         </div>

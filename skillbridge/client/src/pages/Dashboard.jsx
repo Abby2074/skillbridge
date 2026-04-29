@@ -48,10 +48,9 @@ export default function Dashboard() {
   });
 
   const { data: myListings } = useQuery({
-    queryKey: ['my-listings'],
-    queryFn: () => listingsAPI.getAll().then(r => r.data),
-    enabled: isTutor,
-    select: (data) => data.filter(l => l.tutor_id === user?.user_id),
+    queryKey: ['my-listings', user?.user_id],
+    queryFn: () => listingsAPI.getAll({ tutor_id: user?.user_id }).then(r => r.data),
+    enabled: isTutor && !!user?.user_id,
   });
 
   const { data: myAvailability } = useQuery({
@@ -219,8 +218,8 @@ export default function Dashboard() {
     ] : []),
     // Service Marketplace tabs
     ...(canFreelance ? [{ path: '/my-gigs', label: 'My Gigs', icon: Briefcase }] : []),
-    { path: '/service-orders', label: 'Service Orders', icon: Package },
-    { path: '/my-requests', label: 'My Requests', icon: Megaphone },
+    { path: '/service-orders', label: isTutor ? 'Service Orders' : 'My Orders', icon: Package },
+    { path: '/my-requests', label: isTutor ? 'Buyer Requests' : 'My Requests', icon: Megaphone },
     { path: '/wallet', label: 'Wallet', icon: Wallet },
     { path: '/profile', label: 'Profile', icon: User },
   ];
@@ -754,6 +753,29 @@ function ProfileForm() {
   return (
     <div className="space-y-6">
       <h1 className="font-display font-bold text-2xl">Edit Profile</h1>
+
+      {/* Role Badge */}
+      <div className="card flex items-center gap-4">
+        <div className="w-14 h-14 bg-gradient-to-br from-red-brand to-orange-brand rounded-full flex items-center justify-center text-white font-bold text-xl">
+          {user?.full_name?.charAt(0)}
+        </div>
+        <div>
+          <p className="font-display font-semibold text-lg">{user?.full_name}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+              user?.role === 'tutor' ? 'bg-primary/10 text-primary' :
+              user?.role === 'both' ? 'bg-accent/10 text-accent' :
+              user?.role === 'buyer' ? 'bg-orange-brand/10 text-orange-brand' :
+              'bg-red-brand/10 text-red-brand'
+            }`}>
+              {user?.role === 'both' ? 'Student & Tutor' : user?.role === 'tutor' ? 'Tutor' : user?.role === 'buyer' ? 'Buyer' : 'Student'}
+            </span>
+            {user?.is_student === 1 && <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Verified Student</span>}
+          </div>
+          <p className="text-text-muted text-sm mt-1">{user?.email}</p>
+        </div>
+      </div>
+
       <form onSubmit={handleSave} className="card space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1">Full Name</label>

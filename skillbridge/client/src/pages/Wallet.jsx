@@ -56,6 +56,10 @@ export default function WalletPage() {
     tutor_earnings: 'Tutor Earnings',
     refund: 'Refund',
     withdrawal: 'Withdrawal',
+    service_escrow: 'Service Escrow',
+    service_earnings: 'Service Earnings',
+    service_commission: 'Service Commission',
+    access_fee: 'Access Fee',
   };
 
   return (
@@ -145,7 +149,7 @@ export default function WalletPage() {
               </div>
               <button
                 onClick={() => withdrawMutation.mutate({ amount: parseFloat(withdrawAmount), method: withdrawMethod, account_number: withdrawAccount })}
-                disabled={!withdrawAmount || !withdrawAccount || withdrawMutation.isPending}
+                disabled={!withdrawAmount || parseFloat(withdrawAmount) < 1 || parseFloat(withdrawAmount) > (user?.earnings_balance || 0) || !withdrawAccount.trim() || withdrawMutation.isPending}
                 className="btn-accent w-full disabled:opacity-50"
               >
                 {withdrawMutation.isPending ? 'Processing...' : `Withdraw GHS ${withdrawAmount || '0'}`}

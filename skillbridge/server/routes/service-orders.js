@@ -4,6 +4,12 @@ const { v4: uuidv4 } = require('uuid');
 const db = require('../db');
 const { authenticateToken } = require('../middleware/auth');
 
+// Helper: get platform admin account for commission tracking
+function getPlatformAdminId() {
+  const admin = db.prepare('SELECT user_id FROM users WHERE is_admin = 1 LIMIT 1').get();
+  return admin ? admin.user_id : null;
+}
+
 // GET /api/service-orders - Get current user's orders
 router.get('/', authenticateToken, (req, res) => {
   try {
@@ -99,18 +105,19 @@ router.post('/', authenticateToken, (req, res) => {
     if (gig.freelancer_id === req.user.user_id) return res.status(400).json({ error: 'Cannot order your own gig' });
 
     const price = parseFloat(agreed_price);
-    const commission = price * 0.10;
-    const earnings = price * 0.90;
-
-    // Check buyer balance
-    const buyer = db.prepare('SELECT wallet_balance FROM users WHERE user_id = ?').get(req.user.user_id);
-    if (buyer.wallet_balance < price) {
-      return res.status(400).json({ error: 'Insufficient wallet balance. Please top up.' });
+    if (isNaN(price) || price < 1) {
+      return res.status(400).json({ error: 'Price must be at least 1' });
     }
+    const commission = Math.round(price * 0.10 * 100) / 100;
+    const earnings = Math.round(price * 0.90 * 100) / 100;
 
     const now = new Date().toISOString();
 
     const createOrder = db.transaction(() => {
+      // Check buyer balance inside transaction to prevent race conditions
+      const buyer = db.prepare('SELECT wallet_balance FROM users WHERE user_id = ?').get(req.user.user_id);
+      if (buyer.wallet_balance < price) throw new Error('INSUFFICIENT_BALANCE');
+
       // Deduct from buyer (escrow)
       db.prepare('UPDATE users SET wallet_balance = wallet_balance - ? WHERE user_id = ?').run(price, req.user.user_id);
 
@@ -130,8 +137,13 @@ router.post('/', authenticateToken, (req, res) => {
       return order_id;
     });
 
-    const order_id = createOrder();
-    res.status(201).json({ message: 'Order created, funds held in escrow', order_id });
+    try {
+      const order_id = createOrder();
+      res.status(201).json({ message: 'Order created, funds held in escrow', order_id });
+    } catch (txErr) {
+      if (txErr.message === 'INSUFFICIENT_BALANCE') return res.status(400).json({ error: 'Insufficient wallet balance. Please top up.' });
+      throw txErr;
+    }
   } catch (err) {
     console.error('Create order error:', err);
     res.status(500).json({ error: 'Failed to create order' });
@@ -179,10 +191,14 @@ router.put('/:id/confirm', authenticateToken, (req, res) => {
         uuidv4(), order.freelancer_id, null, order.freelancer_earnings, `SVCPAY-${order.order_id.slice(0, 8)}`, now
       );
 
-      db.prepare(`INSERT INTO transactions (transaction_id, user_id, booking_id, transaction_type, amount, direction, status, payment_reference, created_at)
-        VALUES (?, ?, ?, 'service_commission', ?, 'credit', 'completed', ?, ?)`).run(
-        uuidv4(), null, null, order.platform_commission, `SVCCOM-${order.order_id.slice(0, 8)}`, now
-      );
+      // Record commission to platform admin account
+      const platformAdminId = getPlatformAdminId();
+      if (platformAdminId) {
+        db.prepare(`INSERT INTO transactions (transaction_id, user_id, booking_id, transaction_type, amount, direction, status, payment_reference, created_at)
+          VALUES (?, ?, ?, 'service_commission', ?, 'credit', 'completed', ?, ?)`).run(
+          uuidv4(), platformAdminId, null, order.platform_commission, `SVCCOM-${order.order_id.slice(0, 8)}`, now
+        );
+      }
 
       // If this order came from a service request, mark it completed
       if (order.request_id) {

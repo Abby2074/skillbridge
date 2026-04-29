@@ -13,7 +13,8 @@ import { format } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import {
   LayoutDashboard, Users, BookOpen, DollarSign, ShoppingCart, Star, Shield,
-  Search, UserX, UserCheck, Flag, Download, Building, AlertTriangle, CheckCircle, XCircle, Clock
+  Search, UserX, UserCheck, Flag, Download, Building, AlertTriangle, CheckCircle, XCircle, Clock,
+  Package, Truck, Briefcase, MessageSquare, Database, TrendingUp, MapPin, Eye
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -34,12 +35,13 @@ export default function AdminDashboard() {
 
   const tabs = [
     { path: '/', label: 'Overview', icon: LayoutDashboard },
-    { path: '/users', label: 'CRM: Users', icon: Users },
-    { path: '/reviews', label: 'CRM: Reviews', icon: Star },
+    { path: '/crm', label: 'CRM', icon: Users },
     { path: '/finance', label: 'Finance', icon: DollarSign },
     { path: '/orders', label: 'Orders', icon: ShoppingCart },
-    { path: '/skills', label: 'Supply Chain', icon: BookOpen },
-    { path: '/requests', label: 'Skill Requests', icon: Shield },
+    { path: '/inventory', label: 'Inventory', icon: Database },
+    { path: '/supply-chain', label: 'Supply Chain', icon: Truck },
+    { path: '/deliveries', label: 'Deliveries', icon: Package },
+    { path: '/requests', label: 'Requests', icon: Shield },
   ];
 
   return (
@@ -66,11 +68,12 @@ export default function AdminDashboard() {
 
       {/* Overview */}
       {path === '/' && <AdminOverview />}
-      {path === '/users' && <AdminUsers search={userSearch} setSearch={setUserSearch} roleFilter={userRoleFilter} setRoleFilter={setUserRoleFilter} />}
-      {path === '/reviews' && <AdminReviews />}
+      {path === '/crm' && <AdminCRM />}
       {path === '/finance' && <AdminFinance dateRange={dateRange} setDateRange={setDateRange} />}
       {path === '/orders' && <AdminOrders status={orderStatus} setStatus={setOrderStatus} selectedOrder={selectedOrder} setSelectedOrder={setSelectedOrder} />}
-      {path === '/skills' && <AdminSkills />}
+      {path === '/inventory' && <AdminInventory />}
+      {path === '/supply-chain' && <AdminSupplyChain />}
+      {path === '/deliveries' && <AdminDeliveries />}
       {path === '/requests' && <AdminRequests />}
     </div>
   );
@@ -567,6 +570,660 @@ function AdminRequests() {
           </div>
         ))
       )}
+    </div>
+  );
+}
+
+// ========== CRM MODULE ==========
+function AdminCRM() {
+  const [crmTab, setCrmTab] = useState('customers');
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState('recent');
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+
+  const { data: customers, isLoading } = useQuery({
+    queryKey: ['crm-customers', search, sort],
+    queryFn: () => adminAPI.getCRMCustomers({ search, sort }).then(r => r.data),
+  });
+
+  const { data: customerDetail, isLoading: loadingDetail } = useQuery({
+    queryKey: ['crm-customer', selectedCustomer],
+    queryFn: () => adminAPI.getCRMCustomerDetail(selectedCustomer).then(r => r.data),
+    enabled: !!selectedCustomer,
+  });
+
+  const { data: communications } = useQuery({
+    queryKey: ['crm-communications'],
+    queryFn: () => adminAPI.getCRMCommunications().then(r => r.data),
+    enabled: crmTab === 'communications',
+  });
+
+  const { data: feedback } = useQuery({
+    queryKey: ['crm-feedback'],
+    queryFn: () => adminAPI.getCRMFeedback().then(r => r.data),
+    enabled: crmTab === 'feedback',
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="font-display font-semibold text-lg">CRM — Customer Relationship Management</h2>
+      </div>
+
+      {/* CRM Sub-tabs */}
+      <div className="flex gap-2">
+        {[{ key: 'customers', label: 'Customer Database', icon: Users }, { key: 'communications', label: 'Communications', icon: MessageSquare }, { key: 'feedback', label: 'Feedback', icon: Star }].map(t => (
+          <button key={t.key} onClick={() => setCrmTab(t.key)} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${crmTab === t.key ? 'bg-primary text-white' : 'bg-gray-100 text-text-muted hover:bg-gray-200'}`}>
+            <t.icon className="h-4 w-4" /> {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Customer Database */}
+      {crmTab === 'customers' && (
+        <>
+          <div className="flex flex-wrap gap-3">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
+              <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search customers..." className="input-field pl-10 text-sm" />
+            </div>
+            <select value={sort} onChange={e => setSort(e.target.value)} className="input-field text-sm w-auto">
+              <option value="recent">Most Recent</option>
+              <option value="spent">Highest Spending</option>
+              <option value="active">Most Active</option>
+            </select>
+          </div>
+
+          {isLoading ? <Loader /> : (
+            <div className="card overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left">
+                    <th className="py-3 font-medium text-text-muted">Customer</th>
+                    <th className="py-3 font-medium text-text-muted">Role</th>
+                    <th className="py-3 font-medium text-text-muted">Institution</th>
+                    <th className="py-3 font-medium text-text-muted text-center">Sessions</th>
+                    <th className="py-3 font-medium text-text-muted text-center">Orders</th>
+                    <th className="py-3 font-medium text-text-muted text-right">Spent</th>
+                    <th className="py-3 font-medium text-text-muted text-center">Tickets</th>
+                    <th className="py-3 font-medium text-text-muted text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {customers?.map(c => (
+                    <tr key={c.user_id} className="border-b border-border/50 hover:bg-gray-50">
+                      <td className="py-3">
+                        <p className="font-medium">{c.full_name}</p>
+                        <p className="text-text-muted text-xs">{c.email}</p>
+                      </td>
+                      <td className="py-3"><span className="px-2 py-0.5 bg-primary/10 text-primary rounded-full text-xs font-medium">{c.role}</span></td>
+                      <td className="py-3 text-text-muted">{c.institution}</td>
+                      <td className="py-3 text-center">{c.total_sessions}</td>
+                      <td className="py-3 text-center">{c.total_service_orders}</td>
+                      <td className="py-3 text-right font-medium">GHS {Number(c.total_spent).toFixed(0)}</td>
+                      <td className="py-3 text-center">{c.support_tickets}</td>
+                      <td className="py-3 text-right">
+                        <button onClick={() => setSelectedCustomer(c.user_id)} className="text-primary hover:bg-primary/10 p-1.5 rounded-lg"><Eye className="h-4 w-4" /></button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="text-text-muted text-xs mt-3">Total: {customers?.length} customers</p>
+            </div>
+          )}
+
+          {/* Customer Detail Modal */}
+          <Modal isOpen={!!selectedCustomer} onClose={() => setSelectedCustomer(null)} title="Customer Profile" size="lg">
+            {loadingDetail ? <Loader /> : customerDetail && (
+              <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div><p className="text-text-muted">Name</p><p className="font-medium">{customerDetail.customer.full_name}</p></div>
+                  <div><p className="text-text-muted">Email</p><p className="font-medium">{customerDetail.customer.email}</p></div>
+                  <div><p className="text-text-muted">Role</p><p className="font-medium capitalize">{customerDetail.customer.role}</p></div>
+                  <div><p className="text-text-muted">Institution</p><p className="font-medium">{customerDetail.customer.institution}</p></div>
+                  <div><p className="text-text-muted">Wallet Balance</p><p className="font-medium text-accent">GHS {Number(customerDetail.customer.wallet_balance).toFixed(2)}</p></div>
+                  <div><p className="text-text-muted">Joined</p><p className="font-medium">{format(new Date(customerDetail.customer.created_at), 'MMM dd, yyyy')}</p></div>
+                </div>
+
+                {customerDetail.bookings.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2">Recent Bookings</h4>
+                    <div className="space-y-1">
+                      {customerDetail.bookings.slice(0, 5).map(b => (
+                        <div key={b.booking_id} className="flex justify-between text-xs p-2 bg-gray-50 rounded">
+                          <span>{b.title} ({b.skill_name})</span>
+                          <BookingStatusBadge status={b.status} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {customerDetail.messages.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2">Communication Records ({customerDetail.messages.length})</h4>
+                    <div className="space-y-1 max-h-40 overflow-y-auto">
+                      {customerDetail.messages.slice(0, 10).map(m => (
+                        <div key={m.message_id} className="text-xs p-2 bg-gray-50 rounded">
+                          <span className="font-medium">{m.sender_name}</span> to <span className="font-medium">{m.receiver_name}</span>
+                          <p className="text-text-muted mt-0.5 truncate">{m.message_text}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {customerDetail.support_tickets.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2">Support Tickets</h4>
+                    <div className="space-y-1">
+                      {customerDetail.support_tickets.map(t => (
+                        <div key={t.ticket_id} className="text-xs p-2 bg-gray-50 rounded">
+                          <p className="font-medium">{t.subject}</p>
+                          <p className="text-text-muted">{t.message}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {customerDetail.transactions.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold text-sm mb-2">Transaction History</h4>
+                    <div className="space-y-1 max-h-40 overflow-y-auto">
+                      {customerDetail.transactions.map(t => (
+                        <div key={t.transaction_id} className="flex justify-between text-xs p-2 bg-gray-50 rounded">
+                          <span className="capitalize">{t.transaction_type.replace('_', ' ')}</span>
+                          <span className={t.direction === 'credit' ? 'text-success font-medium' : 'text-danger font-medium'}>
+                            {t.direction === 'credit' ? '+' : '-'}GHS {Number(t.amount).toFixed(2)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </Modal>
+        </>
+      )}
+
+      {/* Communications */}
+      {crmTab === 'communications' && (
+        <div className="space-y-4">
+          <h3 className="font-display font-semibold">Platform Communications</h3>
+          {communications?.support_tickets?.length > 0 && (
+            <div className="card">
+              <h4 className="font-semibold text-sm mb-3 flex items-center gap-2"><Shield className="h-4 w-4 text-danger" /> Support Tickets</h4>
+              <div className="space-y-2">
+                {communications.support_tickets.map(t => (
+                  <div key={t.ticket_id} className="p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-sm">{t.user_name} ({t.email})</span>
+                      <span className="text-xs text-text-muted">{format(new Date(t.created_at), 'MMM dd, yyyy')}</span>
+                    </div>
+                    <p className="text-sm font-medium mt-1">{t.subject}</p>
+                    <p className="text-text-muted text-sm">{t.message}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {communications?.messages?.length > 0 && (
+            <div className="card">
+              <h4 className="font-semibold text-sm mb-3 flex items-center gap-2"><MessageSquare className="h-4 w-4 text-primary" /> Recent Messages</h4>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {communications.messages.map(m => (
+                  <div key={m.message_id} className="p-2 bg-gray-50 rounded text-sm">
+                    <span className="font-medium">{m.sender_name}</span>
+                    <span className="text-text-muted"> to </span>
+                    <span className="font-medium">{m.receiver_name}</span>
+                    <span className="text-xs text-text-muted ml-2">{format(new Date(m.sent_at), 'MMM dd, HH:mm')}</span>
+                    <p className="text-text-muted text-xs mt-0.5 truncate">{m.message_text}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Feedback */}
+      {crmTab === 'feedback' && (
+        <div className="space-y-4">
+          {feedback?.stats && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <StatCard title="Session Reviews" value={feedback.stats.total_reviews} icon={Star} color="accent" />
+              <StatCard title="Avg Session Rating" value={feedback.stats.avg_session_rating} icon={Star} color="warning" />
+              <StatCard title="Service Reviews" value={feedback.stats.total_service_reviews} icon={Star} color="primary" />
+              <StatCard title="Avg Service Rating" value={feedback.stats.avg_service_rating} icon={Star} color="success" />
+            </div>
+          )}
+          <div className="card">
+            <h4 className="font-semibold mb-3">All Session Reviews</h4>
+            <div className="space-y-2">
+              {feedback?.reviews?.map(r => (
+                <div key={r.review_id} className={`p-3 rounded-lg ${r.is_flagged ? 'bg-red-50' : 'bg-gray-50'}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="font-medium">{r.student_name}</span>
+                      <span className="text-text-muted">reviewed</span>
+                      <span className="font-medium">{r.tutor_name}</span>
+                    </div>
+                    <div className="flex gap-0.5">
+                      {Array.from({ length: 5 }, (_, i) => (<Star key={i} className={`h-3.5 w-3.5 ${i < r.star_rating ? 'fill-accent text-accent' : 'text-gray-300'}`} />))}
+                    </div>
+                  </div>
+                  {r.review_text && <p className="text-text-muted text-sm mt-1">{r.review_text}</p>}
+                </div>
+              ))}
+            </div>
+          </div>
+          {feedback?.service_reviews?.length > 0 && (
+            <div className="card">
+              <h4 className="font-semibold mb-3">Service Reviews</h4>
+              <div className="space-y-2">
+                {feedback.service_reviews.map(r => (
+                  <div key={r.review_id} className="p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="font-medium">{r.reviewer_name}</span>
+                        <span className="text-text-muted">reviewed</span>
+                        <span className="font-medium">{r.reviewee_name}</span>
+                      </div>
+                      <div className="flex gap-0.5">
+                        {Array.from({ length: 5 }, (_, i) => (<Star key={i} className={`h-3.5 w-3.5 ${i < r.star_rating ? 'fill-accent text-accent' : 'text-gray-300'}`} />))}
+                      </div>
+                    </div>
+                    {r.review_text && <p className="text-text-muted text-sm mt-1">{r.review_text}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ========== INVENTORY MANAGEMENT ==========
+function AdminInventory() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-full-inventory'],
+    queryFn: () => adminAPI.getFullInventory().then(r => r.data),
+  });
+
+  const [invTab, setInvTab] = useState('listings');
+
+  if (isLoading) return <Loader />;
+
+  return (
+    <div className="space-y-6">
+      <h2 className="font-display font-semibold text-lg">Inventory Management — Products & Services</h2>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <StatCard title="Total Products" value={data?.stats.total_products} icon={Database} color="primary" />
+        <StatCard title="Active Listings" value={data?.stats.active_listings} icon={BookOpen} color="success" />
+        <StatCard title="Active Gigs" value={data?.stats.active_gigs} icon={Briefcase} color="accent" />
+        <StatCard title="Availability Slots" value={data?.stats.total_availability_slots} icon={Clock} color="warning" />
+      </div>
+
+      {/* Sub-tabs */}
+      <div className="flex gap-2">
+        <button onClick={() => setInvTab('listings')} className={`px-3 py-2 rounded-lg text-sm font-medium ${invTab === 'listings' ? 'bg-primary text-white' : 'bg-gray-100 text-text-muted'}`}>
+          Tutoring Listings ({data?.listings?.length})
+        </button>
+        <button onClick={() => setInvTab('gigs')} className={`px-3 py-2 rounded-lg text-sm font-medium ${invTab === 'gigs' ? 'bg-primary text-white' : 'bg-gray-100 text-text-muted'}`}>
+          Service Gigs ({data?.gigs?.length})
+        </button>
+      </div>
+
+      {invTab === 'listings' && (
+        <div className="card overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-left">
+                <th className="py-3 font-medium text-text-muted">Service/Listing</th>
+                <th className="py-3 font-medium text-text-muted">Supplier (Tutor)</th>
+                <th className="py-3 font-medium text-text-muted">Category</th>
+                <th className="py-3 font-medium text-text-muted text-center">Price/hr</th>
+                <th className="py-3 font-medium text-text-muted text-center">Slots</th>
+                <th className="py-3 font-medium text-text-muted text-center">Completed</th>
+                <th className="py-3 font-medium text-text-muted text-center">Active</th>
+                <th className="py-3 font-medium text-text-muted text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data?.listings?.map(l => (
+                <tr key={l.listing_id} className="border-b border-border/50 hover:bg-gray-50">
+                  <td className="py-3">
+                    <p className="font-medium">{l.title}</p>
+                    <p className="text-text-muted text-xs">{l.skill_name}</p>
+                  </td>
+                  <td className="py-3 text-text-muted">{l.tutor_name}</td>
+                  <td className="py-3 text-text-muted">{l.category}</td>
+                  <td className="py-3 text-center font-medium">GHS {Number(l.hourly_rate).toFixed(0)}</td>
+                  <td className="py-3 text-center">{l.available_slots}</td>
+                  <td className="py-3 text-center text-success">{l.completed_sessions}</td>
+                  <td className="py-3 text-center text-accent">{l.active_bookings}</td>
+                  <td className="py-3 text-center">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${l.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                      {l.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {invTab === 'gigs' && (
+        <div className="card overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-left">
+                <th className="py-3 font-medium text-text-muted">Service/Gig</th>
+                <th className="py-3 font-medium text-text-muted">Supplier (Freelancer)</th>
+                <th className="py-3 font-medium text-text-muted">Category</th>
+                <th className="py-3 font-medium text-text-muted text-center">Price Range</th>
+                <th className="py-3 font-medium text-text-muted text-center">Completed</th>
+                <th className="py-3 font-medium text-text-muted text-center">Active</th>
+                <th className="py-3 font-medium text-text-muted text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data?.gigs?.map(g => (
+                <tr key={g.gig_id} className="border-b border-border/50 hover:bg-gray-50">
+                  <td className="py-3">
+                    <p className="font-medium">{g.title}</p>
+                    <p className="text-text-muted text-xs">{g.delivery_time}</p>
+                  </td>
+                  <td className="py-3 text-text-muted">{g.freelancer_name}</td>
+                  <td className="py-3 text-text-muted">{g.category_name}</td>
+                  <td className="py-3 text-center font-medium">GHS {Number(g.min_price).toFixed(0)}-{Number(g.max_price).toFixed(0)}</td>
+                  <td className="py-3 text-center text-success">{g.completed_orders}</td>
+                  <td className="py-3 text-center text-accent">{g.active_orders}</td>
+                  <td className="py-3 text-center">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${g.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                      {g.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ========== SUPPLY CHAIN MANAGEMENT ==========
+function AdminSupplyChain() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-supply-chain'],
+    queryFn: () => adminAPI.getSupplyChain().then(r => r.data),
+  });
+
+  const [scTab, setScTab] = useState('suppliers');
+  const COLORS = ['#1B4F72', '#E67E22', '#1E8449', '#C0392B', '#8E44AD', '#2C3E50'];
+
+  if (isLoading) return <Loader />;
+
+  return (
+    <div className="space-y-6">
+      <h2 className="font-display font-semibold text-lg">Supply Chain Management</h2>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <StatCard title="Total Suppliers" value={data?.stats.total_suppliers} icon={Users} color="primary" />
+        <StatCard title="Active Suppliers" value={data?.stats.active_suppliers} icon={CheckCircle} color="success" />
+        <StatCard title="Partner Institutions" value={data?.stats.total_partners} icon={Building} color="accent" />
+        <StatCard title="Products in Supply" value={data?.stats.total_products_in_supply} icon={Package} color="warning" />
+      </div>
+
+      {/* Sub-tabs */}
+      <div className="flex gap-2">
+        {[
+          { key: 'suppliers', label: 'Suppliers (Tutors & Freelancers)' },
+          { key: 'partners', label: 'Partners (Institutions)' },
+          { key: 'distribution', label: 'Distribution & E-Market' },
+        ].map(t => (
+          <button key={t.key} onClick={() => setScTab(t.key)} className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${scTab === t.key ? 'bg-primary text-white' : 'bg-gray-100 text-text-muted hover:bg-gray-200'}`}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Suppliers */}
+      {scTab === 'suppliers' && (
+        <div className="card overflow-x-auto">
+          <h3 className="font-semibold mb-4">Service Suppliers</h3>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-left">
+                <th className="py-3 font-medium text-text-muted">Supplier</th>
+                <th className="py-3 font-medium text-text-muted">Institution</th>
+                <th className="py-3 font-medium text-text-muted text-center">Listings</th>
+                <th className="py-3 font-medium text-text-muted text-center">Gigs</th>
+                <th className="py-3 font-medium text-text-muted text-center">Delivered</th>
+                <th className="py-3 font-medium text-text-muted text-center">Rating</th>
+                <th className="py-3 font-medium text-text-muted text-right">Earnings</th>
+                <th className="py-3 font-medium text-text-muted text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data?.suppliers?.map(s => (
+                <tr key={s.user_id} className="border-b border-border/50 hover:bg-gray-50">
+                  <td className="py-3">
+                    <p className="font-medium">{s.full_name}</p>
+                    <p className="text-text-muted text-xs">{s.email}</p>
+                  </td>
+                  <td className="py-3 text-text-muted">{s.institution}</td>
+                  <td className="py-3 text-center">{s.total_listings}</td>
+                  <td className="py-3 text-center">{s.total_gigs}</td>
+                  <td className="py-3 text-center font-medium text-success">{s.completed_sessions + s.completed_orders}</td>
+                  <td className="py-3 text-center">
+                    {s.avg_rating > 0 ? (
+                      <span className="flex items-center justify-center gap-1"><Star className="h-3.5 w-3.5 fill-accent text-accent" /> {Number(s.avg_rating).toFixed(1)}</span>
+                    ) : <span className="text-text-muted">N/A</span>}
+                  </td>
+                  <td className="py-3 text-right font-medium">GHS {Number(s.earnings_balance).toFixed(0)}</td>
+                  <td className="py-3 text-center">
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${s.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      {s.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Partners */}
+      {scTab === 'partners' && (
+        <div className="card overflow-x-auto">
+          <h3 className="font-semibold mb-4 flex items-center gap-2"><Building className="h-5 w-5 text-primary" /> Partner Institutions</h3>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-left">
+                <th className="py-3 font-medium text-text-muted">Institution</th>
+                <th className="py-3 font-medium text-text-muted text-center">Total Users</th>
+                <th className="py-3 font-medium text-text-muted text-center">Suppliers</th>
+                <th className="py-3 font-medium text-text-muted text-center">Buyers</th>
+                <th className="py-3 font-medium text-text-muted text-center">Listings</th>
+                <th className="py-3 font-medium text-text-muted text-center">Gigs</th>
+                <th className="py-3 font-medium text-text-muted text-center">Delivered</th>
+                <th className="py-3 font-medium text-text-muted text-right">Revenue</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data?.partners?.map(p => (
+                <tr key={p.institution} className="border-b border-border/50 hover:bg-gray-50">
+                  <td className="py-3 font-medium">{p.institution}</td>
+                  <td className="py-3 text-center">{p.total_users}</td>
+                  <td className="py-3 text-center text-primary font-medium">{p.suppliers}</td>
+                  <td className="py-3 text-center">{p.buyers}</td>
+                  <td className="py-3 text-center">{p.listings_supplied}</td>
+                  <td className="py-3 text-center">{p.gigs_supplied}</td>
+                  <td className="py-3 text-center text-success font-medium">{p.sessions_delivered + p.services_delivered}</td>
+                  <td className="py-3 text-right font-medium text-accent">GHS {Number(p.total_revenue).toFixed(0)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Distribution */}
+      {scTab === 'distribution' && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="card">
+              <h3 className="font-semibold mb-4">E-Market: Tutoring Distribution by Category</h3>
+              <div className="space-y-2">
+                {data?.distribution?.by_category?.map((d, i) => (
+                  <div key={d.category} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                      <span className="text-sm font-medium">{d.category}</span>
+                    </div>
+                    <div className="text-sm">
+                      <span className="text-text-muted">{d.listings} listings</span>
+                      <span className="mx-2 text-border">|</span>
+                      <span className="text-success font-medium">{d.delivered} delivered</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="card">
+              <h3 className="font-semibold mb-4">E-Market: Service Distribution by Category</h3>
+              <div className="space-y-2">
+                {data?.distribution?.by_service_category?.map((d, i) => (
+                  <div key={d.category_name} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[(i + 3) % COLORS.length] }} />
+                      <span className="text-sm font-medium">{d.category_name}</span>
+                    </div>
+                    <div className="text-sm">
+                      <span className="text-text-muted">{d.gigs} gigs</span>
+                      <span className="mx-2 text-border">|</span>
+                      <span className="text-success font-medium">{d.delivered} delivered</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="card">
+            <h3 className="font-semibold mb-4">Distribution by Delivery Format</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {data?.distribution?.by_format?.map(f => (
+                <div key={f.format} className="p-4 bg-gray-50 rounded-lg text-center">
+                  <MapPin className="h-6 w-6 text-primary mx-auto mb-2" />
+                  <p className="font-semibold capitalize">{f.format === 'both' ? 'Hybrid' : f.format}</p>
+                  <p className="text-text-muted text-sm">{f.count} listings</p>
+                  <p className="text-success font-medium text-sm">{f.delivered} delivered</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ========== DELIVERY MANAGEMENT ==========
+function AdminDeliveries() {
+  const [statusFilter, setStatusFilter] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['admin-deliveries', statusFilter, typeFilter],
+    queryFn: () => adminAPI.getDeliveries({ status: statusFilter || undefined, type: typeFilter || undefined }).then(r => r.data),
+  });
+
+  if (isLoading) return <Loader />;
+
+  return (
+    <div className="space-y-6">
+      <h2 className="font-display font-semibold text-lg">Delivery Management</h2>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+        <StatCard title="Total Deliveries" value={data?.stats.total} icon={Package} color="primary" />
+        <StatCard title="Completed" value={data?.stats.completed} icon={CheckCircle} color="success" />
+        <StatCard title="In Progress" value={data?.stats.in_progress} icon={Truck} color="accent" />
+        <StatCard title="Pending" value={data?.stats.pending} icon={Clock} color="warning" />
+        <div className="card flex flex-col items-center justify-center">
+          <p className="text-text-muted text-xs">Completion Rate</p>
+          <p className="font-display font-bold text-2xl text-success">{data?.stats.completion_rate}%</p>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3">
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="input-field text-sm w-auto">
+          <option value="">All Statuses</option>
+          {['requested', 'pending', 'confirmed', 'in_progress', 'delivered', 'completed', 'rated', 'cancelled'].map(s => (
+            <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1).replace('_', ' ')}</option>
+          ))}
+        </select>
+        <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="input-field text-sm w-auto">
+          <option value="">All Types</option>
+          <option value="session">Tutoring Sessions</option>
+          <option value="service">Service Orders</option>
+        </select>
+      </div>
+
+      {/* Delivery Table */}
+      <div className="card overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border text-left">
+              <th className="py-3 font-medium text-text-muted">Type</th>
+              <th className="py-3 font-medium text-text-muted">Service/Product</th>
+              <th className="py-3 font-medium text-text-muted">Provider</th>
+              <th className="py-3 font-medium text-text-muted">Customer</th>
+              <th className="py-3 font-medium text-text-muted text-center">Format</th>
+              <th className="py-3 font-medium text-text-muted text-right">Price</th>
+              <th className="py-3 font-medium text-text-muted text-center">Status</th>
+              <th className="py-3 font-medium text-text-muted text-right">Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data?.deliveries?.map(d => (
+              <tr key={d.id} className="border-b border-border/50 hover:bg-gray-50">
+                <td className="py-3">
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${d.type === 'service' ? 'bg-accent/10 text-accent' : 'bg-primary/10 text-primary'}`}>
+                    {d.type === 'service' ? 'Service' : 'Session'}
+                  </span>
+                </td>
+                <td className="py-3">
+                  <p className="font-medium">{d.title}</p>
+                  {d.skill_name && <p className="text-text-muted text-xs">{d.skill_name}</p>}
+                </td>
+                <td className="py-3 text-text-muted">{d.provider_name}</td>
+                <td className="py-3 text-text-muted">{d.customer_name}</td>
+                <td className="py-3 text-center capitalize text-text-muted">{d.delivery_format}</td>
+                <td className="py-3 text-right font-medium">GHS {Number(d.price).toFixed(2)}</td>
+                <td className="py-3 text-center"><BookingStatusBadge status={d.status} /></td>
+                <td className="py-3 text-right text-text-muted">{format(new Date(d.delivery_date || d.created_at), 'MMM dd')}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="text-text-muted text-xs mt-3">Showing {data?.deliveries?.length} deliveries</p>
+      </div>
     </div>
   );
 }

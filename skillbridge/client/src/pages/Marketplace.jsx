@@ -5,11 +5,15 @@ import { gigsAPI } from '../api';
 import Loader from '../components/Loader';
 import EmptyState from '../components/EmptyState';
 import { useAuth } from '../context/AuthContext';
-import { Search, SlidersHorizontal, Star, Clock, Briefcase, PlusCircle, Megaphone } from 'lucide-react';
+import { Search, SlidersHorizontal, Star, Clock, Briefcase, PlusCircle, Megaphone, ShoppingCart } from 'lucide-react';
+import { useCart } from '../context/CartContext';
+import { useToast } from '../components/Toast';
 
 export default function Marketplace() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { isAuthenticated, canFreelance } = useAuth();
+  const { addItem, items } = useCart();
+  const { addToast } = useToast();
 
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
@@ -137,41 +141,62 @@ export default function Marketplace() {
             <EmptyState title="No services found" message="Try adjusting your filters or search terms." icon={Briefcase} />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {gigs?.map(gig => (
-                <Link key={gig.gig_id} to={`/gig/${gig.gig_id}`} className="card hover:shadow-md hover:border-primary/20 transition-all group">
-                  <div className="flex items-start justify-between mb-3">
-                    <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">{gig.category_name}</span>
-                    {gig.avg_rating && (
-                      <span className="flex items-center gap-1 text-sm text-accent">
-                        <Star className="h-3.5 w-3.5 fill-accent" /> {gig.avg_rating}
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="font-display font-semibold text-text-main group-hover:text-primary transition-colors mb-2">{gig.title}</h3>
-                  <p className="text-text-muted text-sm line-clamp-2 mb-4">{gig.description}</p>
-                  <div className="flex items-center justify-between pt-3 border-t border-border">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center text-primary text-xs font-bold">
-                        {gig.freelancer_name?.charAt(0)}
+              {gigs?.map(gig => {
+                const inCart = items.some(i => i.cart_key === `gig-${gig.gig_id}`);
+                return (
+                  <div key={gig.gig_id} className="card hover:shadow-md hover:border-primary/20 transition-all group">
+                    <Link to={`/gig/${gig.gig_id}`}>
+                      <div className="flex items-start justify-between mb-3">
+                        <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">{gig.category_name}</span>
+                        {gig.avg_rating && (
+                          <span className="flex items-center gap-1 text-sm text-accent">
+                            <Star className="h-3.5 w-3.5 fill-accent" /> {gig.avg_rating}
+                          </span>
+                        )}
                       </div>
-                      <div>
-                        <p className="text-sm font-medium">{gig.freelancer_name}</p>
-                        <p className="text-xs text-text-muted">{gig.institution}</p>
+                      <h3 className="font-display font-semibold text-text-main group-hover:text-primary transition-colors mb-2">{gig.title}</h3>
+                      <p className="text-text-muted text-sm line-clamp-2 mb-4">{gig.description}</p>
+                    </Link>
+                    <div className="flex items-center justify-between pt-3 border-t border-border">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 bg-primary/10 rounded-full flex items-center justify-center text-primary text-xs font-bold">
+                          {gig.freelancer_name?.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{gig.freelancer_name}</p>
+                          <p className="text-xs text-text-muted">{gig.institution}</p>
+                        </div>
+                      </div>
+                      <div className="text-right flex items-center gap-2">
+                        <div>
+                          <p className="font-semibold text-accent text-sm">
+                            GHS {Number(gig.min_price).toFixed(0)} - {Number(gig.max_price).toFixed(0)}
+                          </p>
+                          {gig.delivery_time && (
+                            <p className="text-xs text-text-muted flex items-center gap-1 justify-end">
+                              <Clock className="h-3 w-3" /> {gig.delivery_time}
+                            </p>
+                          )}
+                        </div>
+                        {isAuthenticated && (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              addItem({ type: 'gig', gig_id: gig.gig_id, title: gig.title, provider_name: gig.freelancer_name, agreed_price: gig.min_price, price: gig.min_price, description: gig.description?.slice(0, 100), delivery_format: gig.delivery_format });
+                              addToast('Added to cart!');
+                            }}
+                            disabled={inCart}
+                            className={`p-2 rounded-lg transition-colors ${inCart ? 'bg-green-100 text-green-600' : 'bg-accent/10 text-accent hover:bg-accent/20'}`}
+                            title={inCart ? 'In Cart' : 'Add to Cart'}
+                          >
+                            <ShoppingCart className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-accent text-sm">
-                        GHS {Number(gig.min_price).toFixed(0)} - {Number(gig.max_price).toFixed(0)}
-                      </p>
-                      {gig.delivery_time && (
-                        <p className="text-xs text-text-muted flex items-center gap-1 justify-end">
-                          <Clock className="h-3 w-3" /> {gig.delivery_time}
-                        </p>
-                      )}
-                    </div>
                   </div>
-                </Link>
-              ))}
+                );
+              })}
             </div>
           )}
 

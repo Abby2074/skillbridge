@@ -144,11 +144,11 @@ router.get('/:id', optionalAuth, (req, res) => {
 
 // POST /api/gigs - Create a new gig (students only)
 router.post('/', authenticateToken, requireStudent, [
-  body('title').trim().notEmpty().withMessage('Title is required'),
-  body('description').trim().notEmpty().withMessage('Description is required'),
+  body('title').trim().notEmpty().isLength({ max: 200 }).withMessage('Title is required (max 200 chars)'),
+  body('description').trim().notEmpty().isLength({ max: 5000 }).withMessage('Description is required (max 5000 chars)'),
   body('category_id').trim().notEmpty().withMessage('Category is required'),
-  body('min_price').isFloat({ min: 1 }).withMessage('Minimum price must be at least 1'),
-  body('max_price').isFloat({ min: 1 }).withMessage('Maximum price must be at least 1'),
+  body('min_price').isFloat({ min: 1, max: 100000 }).withMessage('Minimum price must be between 1 and 100,000'),
+  body('max_price').isFloat({ min: 1, max: 100000 }).withMessage('Maximum price must be between 1 and 100,000'),
 ], (req, res) => {
   try {
     const errors = validationResult(req);
