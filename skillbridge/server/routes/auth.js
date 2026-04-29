@@ -26,7 +26,7 @@ router.post('/register', authLimiter, [
   body('email').isEmail().isLength({ max: 255 }).withMessage('Valid email is required'),
   body('password').isLength({ min: 8, max: 128 }).withMessage('Password must be 8-128 characters'),
   body('role').isIn(['student', 'tutor', 'both', 'buyer']).withMessage('Role must be student, tutor, both, or buyer'),
-  body('institution').trim().notEmpty().isLength({ max: 200 }).withMessage('Institution is required (max 200 chars)'),
+  body('institution').if(body('role').not().equals('buyer')).trim().notEmpty().isLength({ max: 200 }).withMessage('Institution is required (max 200 chars)'),
 ], (req, res) => {
   try {
     const errors = validationResult(req);
